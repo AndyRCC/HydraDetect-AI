@@ -1,0 +1,13 @@
+# --- Core Numerical and Signal Processing ---
+numpy>=1.26.0
+scipy>=1.12.0
+PyWavelets>=1.5.0
+pandas>=2.2.0
+
+# --- Machine Learning and Serialization ---
+scikit-learn>=1.4.0
+joblib>=1.3.0
+
+# --- GUI and Visualization ---
+PyQt5>=5.15.10
+matplotlib>=3.8.0
