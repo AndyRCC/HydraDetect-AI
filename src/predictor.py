@@ -1,7 +1,7 @@
 """
 WaterHammer GUI Simulator & Presentation Tool (PATCHED)
 Compatibilidad mejorada de carga/guardado de modelos (.joblib) — acepta formatos del trainer externo
-Author: ChatGPT (patched)
+
 """
 import sys
 import os
