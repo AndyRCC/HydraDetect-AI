@@ -744,7 +744,7 @@ class CreditsPage(QtWidgets.QWidget):
         link = QtWidgets.QLabel(
             f"<a href='{AUTHOR_WEBSITE}' "
             f"style='color:{COLOR_CYAN}; font-size:13pt; font-weight:700;'>"
-            f"🌐 Acerca de mi creador </a>"
+            f"🌐 Conoce a mi creador </a>"
         )
         link.setAlignment(QtCore.Qt.AlignCenter)
         link.setOpenExternalLinks(True)
