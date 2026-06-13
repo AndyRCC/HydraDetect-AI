@@ -6,7 +6,7 @@
 
 ## 📋 Executive Overview
 
-**HydroScan AI** is an advanced diagnostic framework designed to tackle **Non-Revenue Water (NRW)** losses. By leveraging **Digital Signal Processing (DSP)** and **Supervised Machine Learning**, this system identifies illicit water derivations (bypasses) through the analysis of **Hydraulic Transients** (Water Hammer events). 
+**HydroDetect AI** is an advanced diagnostic framework designed to tackle **Non-Revenue Water (NRW)** losses. By leveraging **Digital Signal Processing (DSP)** and **Supervised Machine Learning**, this system identifies illicit water derivations (bypasses) through the analysis of **Hydraulic Transients** (Water Hammer events). 
 
 Unlike traditional methods, this project utilizes high-frequency pressure telemetry to detect micro-anomalies in wave propagation, classified through optimized **Support Vector Machines (SVM)** and **Random Forest (RF)** architectures.
 
