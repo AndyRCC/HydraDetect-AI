@@ -1,154 +1,7 @@
 """
-HydroAnalyzer v4.5 — Análisis unificado de transientes hidráulicos
+HydroAnalyzer v4.6 — Análisis unificado de transientes hidráulicos
 ====================================================================
 
-Cambios v4.5 — FIX para ejecutables congelados (PyInstaller/py2exe):
-    • Corrige el bug donde, al entrenar desde un .exe, se abrían
-      múltiples ventanas de HydroAnalyzer, el entrenamiento se quedaba
-      colgado en «Entrenando Random Forest + calibración…» y cerrar
-      una ventana extra producía TerminatedWorkerError.
-      Causa: en Windows, los procesos hijos de joblib/loky (usados por
-      CalibratedClassifierCV y cross_val_score con n_jobs=-1) se crean
-      RE-EJECUTANDO el programa. En un .exe congelado eso relanza la
-      aplicación entera: cada "worker" abría su propia GUI en vez de
-      calibrar, el proceso padre esperaba para siempre, y al cerrar
-      una ventana fantasma loky detectaba un worker muerto.
-      Solución en dos capas:
-        1) multiprocessing.freeze_support() como primera línea del
-           bloque __main__ (intercepta los relanzamientos hijos).
-        2) PROC_N_JOBS = 1 si sys.frozen: calibración y cross_val_score
-           pasan a backend secuencial (cero subprocesos) en el .exe.
-           RF/XGB/LGBM conservan n_jobs=-1 porque paralelizan con
-           hilos (sklearn prefer="threads" / OpenMP), seguros y rápidos.
-
-Cambios v4.4:
-    • Créditos integrados a PANTALLA COMPLETA: ya no es una ventana
-      emergente. El widget central es ahora un QStackedWidget con la
-      app normal (página 0) y la nueva CreditsPage (página 1), como
-      una sección más del programa.
-    • El título «HydroAnalyzer» del header es CLICKEABLE (cursor de
-      mano + tooltip) y abre los créditos. También siguen funcionando
-      el botón «❤ Créditos» y Ctrl+G.
-    • Botón «← Volver al programa» (y tecla Esc) para regresar.
-    • Sistema solar animado de alto impacto pintado con QPainter en la
-      página de créditos: campo de 150 estrellas titilantes (12 con
-      destello en cruz), nebulosas, sol con núcleo/corona/halo
-      pulsantes, 8 planetas en órbitas elípticas pseudo-3D que pasan
-      por DETRÁS y DELANTE del sol (escala y brillo según
-      profundidad), iluminación de cada planeta DESDE el sol, estelas
-      de movimiento, anillos de Saturno (mitad trasera/delantera),
-      bandas de Júpiter, luna orbitando la Tierra y cometas periódicos
-      con cola degradada. ~30 fps SOLO mientras la página está visible
-      (timer arranca/para en showEvent/hideEvent → costo cero en uso
-      normal). Tarjeta «glass» translúcida con el contenido encima.
-    • Se elimina la clase CreditsDialog (reemplazada por CreditsPage).
-
-Cambios v4.3:
-    • El fondo animado de símbolos se REUBICA: ya no es un overlay de
-      ventana completa (que se percibía "delante" del contenido), sino
-      un background real confinado a la banda superior (el header con
-      el título, el badge de modelo y los botones).
-      Implementación: nueva clase AnimatedHeaderFrame(QFrame) que pinta
-      en su propio paintEvent — primero el fondo del stylesheet
-      (gradiente/borde/radio vía QStyleOption + PE_Widget), luego los
-      símbolos recortados al rectángulo redondeado, y los hijos
-      (título, subtítulo, badge, botones) se pintan después → quedan
-      SIEMPRE encima. Deriva horizontal lenta hacia la izquierda con
-      leve vaivén vertical; reciclaje por el borde derecho.
-    • Los QLabel del header (título y subtítulo) ahora tienen
-      background transparente en el stylesheet: antes el selector
-      global «QWidget {background-color: …}» los volvía opacos y se
-      veía un rectángulo oscuro detrás de las letras.
-    • Se elimina por completo la clase MathSymbolsOverlay (overlay de
-      v4.2) y su instanciación. HYDRO_NO_BG=1 sigue desactivando la
-      animación (ahora del header).
-
-Cambios v4.2:
-    • Validación Cruzada SIEMPRE disponible: se eliminó el checkbox
-      «Activar Validación Cruzada». La sub-pestaña «🔬 Validación
-      Cruzada» ahora es permanente junto a «🚀 Entrenamiento».
-    • Fondo animado «engineering rain» (MathSymbolsOverlay): símbolos
-      de matemáticas, IA y programación (∫, ∂, λ, eˣ, f(x), lim, UART,
-      PID, Python, Arduino, SVM, XGB…) flotando sutilmente por toda la
-      ventana, al estilo del portafolio del autor. Alpha 5–10 % para no
-      afectar legibilidad, atraviesa los clicks
-      (WA_TransparentForMouseEvents), repintado por regiones sucias
-      (CPU mínima) y pausa automática al minimizar. Desactivable con
-      HYDRO_NO_BG=1.
-    • FIX Vista 3D en pantalla completa: el espectrograma 3D aparecía
-      empujado al fondo con un hueco enorme arriba. Causa: el QLabel de
-      ayuda tenía política vertical Preferred (crecible) y absorbía el
-      espacio sobrante del layout. Ahora el label es de altura fija, el
-      canvas recibe stretch=1 y Plot3DCanvas fuerza política Expanding.
-
-Cambios v4.1 — bugfix crítico de animaciones:
-    • FIX del crash «RuntimeError: wrapped C/C++ object of type
-      QPropertyAnimation has been deleted» que abortaba la app al
-      navegar entre pestañas (p. ej. Vista 3D → otra sección → Vista 3D,
-      o Análisis → Créditos → Entrenamiento real).
-      Causa raíz: las animaciones one-shot se arrancaban con
-      DeleteWhenStopped, que destruye el objeto C++ al terminar, pero el
-      wrapper Python permanecía en la lista anti-GC ``widget._fx_anims``.
-      La siguiente animación sobre el MISMO widget purgaba esa lista
-      llamando ``.state()`` sobre el wrapper muerto → RuntimeError → y
-      como PyQt5 aborta el proceso ante excepciones no capturadas en
-      slots, la aplicación entera crasheaba.
-      Solución:
-        - Toda inspección de animaciones almacenadas pasa por
-          ``FX._is_running``, que trata los wrappers muertos como
-          «no corriendo» en lugar de lanzar.
-        - Las one-shot ahora usan ``finished → deleteLater`` + arranque
-          normal (``FX._start_oneshot``), manteniendo la memoria limpia
-          sin la trampa de DeleteWhenStopped.
-        - Todos los puntos de entrada de FX (fade_in, slide_fade_in,
-          glow, pulse_glow, animate_progress, attach_tab_fade) son a
-          prueba de widgets en destrucción (capturan RuntimeError).
-        - animate_progress detiene la animación previa de la misma barra
-          antes de lanzar otra (evita dos animaciones de `value`
-          peleando).
-
-Cambios v4.0 — «Aurora» (overhaul visual):
-    • Tema rediseñado: gradientes, radios amplios, glow en botones
-      primarios, scrollbars finos, tabs estilizados, focus rings.
-    • Infraestructura de animaciones (clase FX): fade-in con easing
-      cúbico, slide+fade, glow pulsante, progreso suavizado.
-    • Transiciones animadas al cambiar de pestaña (fade del contenido)
-      en las pestañas principales y en los visualizadores.
-    • Splash screen animado al arrancar (degradado + logo + fade)
-      — se omite con la variable de entorno HYDRO_NO_SPLASH=1.
-    • Nueva «🧊 Vista 3D» en el Simulador: superficie 3D del
-      espectrograma (tiempo × frecuencia × dB) con render perezoso
-      (solo se calcula al abrir la pestaña, con downsampling para
-      mantener la fluidez).
-    • Badge de predicción con animación de aparición (slide + fade)
-      y glow del color del veredicto.
-    • Diálogo «❤ Créditos»: agradecimiento + enlace a la web del
-      autor (https://andyrcc.github.io/) con botón para abrirla.
-    • Atajos de teclado: Ctrl+1..4 (pestañas), Ctrl+O (cargar modelo),
-      Ctrl+S (guardar modelo), F1 (ayuda), Ctrl+G (créditos).
-    • Sin pérdida de funcionalidad: todo lo de v3.21 sigue intacto.
-
-Cambios v3.21 (anteriores):
-    • Botón «🧹 Filtrar señales cargadas» (usa filtros del Simulador).
-    • Botón «🗑️ Eliminar outliers del dataset» en Validación Cruzada.
-
-Cambios v3.20 (anteriores):
-    • Multi-selección en ranking + sin redirecciones automáticas.
-
-Cambios v3.9 (anteriores):
-    • Pestaña «Matriz de confusión» rediseñada con tabla detallada
-      por señal a la derecha (filtrable, ordenable, exportable a CSV).
-
-Cambios v3.8 (anteriores):
-    • Cargador de señal robusto (acepta logs de PuTTY, txt, etc.).
-
-Pipeline de filtrado (Simulador):
-    1) Diferencia con vecinos
-    2) Hampel
-    3) Envolvente IQR
-    4) Filtro consciente de duración
-    5) Eliminación manual por intervalo
-    6) Butterworth pasa-bajos de fase cero
 
 Dependencias: PyQt5, numpy, scipy, scikit-learn, pywavelets,
               matplotlib, joblib, pandas.
@@ -225,7 +78,7 @@ except Exception:
 # ============================================================================
 
 APP_NAME = "HydroAnalyzer"
-APP_VERSION = "4.5"
+APP_VERSION = "4.6"
 
 # ── Soporte para ejecutables congelados (PyInstaller / py2exe) ─────────
 # sys.frozen lo define el bootloader del empaquetador. En un .exe
@@ -315,6 +168,7 @@ WAVELET_NAME = "db4"
 WAVELET_LEVEL = 4
 
 AUTHOR_WEBSITE = "https://andyrcc.github.io/"
+PROJECT_WEBSITE = "https://andyrcc.github.io/HydraDetect-AI/"
 
 
 # ============================================================================
@@ -890,20 +744,20 @@ class CreditsPage(QtWidgets.QWidget):
         link = QtWidgets.QLabel(
             f"<a href='{AUTHOR_WEBSITE}' "
             f"style='color:{COLOR_CYAN}; font-size:13pt; font-weight:700;'>"
-            f"🌐  andyrcc.github.io</a>"
+            f"🌐 Acerca de mi creador </a>"
         )
         link.setAlignment(QtCore.Qt.AlignCenter)
         link.setOpenExternalLinks(True)
         link.setTextInteractionFlags(QtCore.Qt.TextBrowserInteraction)
         cv.addWidget(link)
 
-        btn_web = QtWidgets.QPushButton("🚀  Visitar página web")
+        btn_web = QtWidgets.QPushButton("🚀  Visitar página web del proyecto")
         btn_web.setObjectName("webButton")
         btn_web.setMinimumHeight(44)
         btn_web.setCursor(QtCore.Qt.PointingHandCursor)
         btn_web.clicked.connect(
             lambda: QtGui.QDesktopServices.openUrl(
-                QtCore.QUrl(AUTHOR_WEBSITE))
+                QtCore.QUrl(PROJECT_WEBSITE))
         )
         cv.addWidget(btn_web)
         FX.pulse_glow(btn_web, COLOR_ACCENT, blur_min=10, blur_max=34)
@@ -1213,6 +1067,394 @@ class CreditsPage(QtWidgets.QWidget):
         p.end()
         # Los hijos (botón Volver + tarjeta glass) se pintan después →
         # siempre quedan ENCIMA del cosmos.
+
+
+class AboutPage(QtWidgets.QWidget):
+    """
+    Página «Acerca de» a PANTALLA COMPLETA (v4.6) — reemplaza al antiguo
+    diálogo de ayuda emergente. Es la página 2 del QStackedWidget
+    central. Se entra con el botón «ℹ» del header y se vuelve con
+    «← Volver» o Esc.
+
+    El fondo es una RED NEURONAL 3D animada pintada con QPainter:
+      • Arquitectura 3-6-8-6-4-2 (entrada → 4 ocultas → salida),
+        con los nodos de cada capa repartidos en una rejilla vertical y
+        una coordenada z propia para dar volumen.
+      • Toda la nube de neuronas rota lentamente en los ejes Y y X;
+        cada nodo se proyecta en perspectiva (los de atrás se ven más
+        pequeños y tenues → profundidad real).
+      • Las conexiones entre capas tienen un peso pseudo-aleatorio fijo
+        que define su color (cian = positivo, magenta = negativo) y
+        grosor. Se dibujan ordenadas por profundidad (painter's
+        algorithm) para que el 3D se lea bien.
+      • PULSOS DE ACTIVACIÓN: continuamente salen «forward passes» —
+        ondas de luz que viajan capa a capa por las aristas, iluminando
+        las neuronas al llegar (un nodo activado crece y brilla). Es la
+        metáfora visual de la inferencia de la red.
+      • Campo de partículas de fondo + viñeta radial para profundidad.
+    ~30 fps SOLO mientras la página está visible (timer en
+    showEvent/hideEvent → costo cero en uso normal).
+    """
+
+    back_requested = QtCore.pyqtSignal()
+
+    LAYERS = [3, 6, 8, 6, 4, 2]   # arquitectura mostrada
+    FPS_MS = 33                    # ~30 fps
+    PULSE_PERIOD = 1.7             # s entre forward-passes nuevos
+    PULSE_SPEED = 2.6              # capas por segundo
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._t0 = time.monotonic()
+        self._rng = np.random.default_rng(11)
+        self._build_net()
+        self._pulses: List[Dict[str, Any]] = []
+        self._next_pulse = 0.0
+        self._particles = []
+        self._timer = QtCore.QTimer(self)
+        self._timer.timeout.connect(self.update)
+        self._build_overlay_ui()
+
+        esc = QtWidgets.QShortcut(QtGui.QKeySequence("Esc"), self)
+        esc.setContext(QtCore.Qt.WidgetWithChildrenShortcut)
+        esc.activated.connect(self.back_requested.emit)
+
+    # ------------------------------------------------------------------
+    def _build_net(self):
+        """Genera posiciones 3D de cada neurona y los pesos de cada
+        conexión (una sola vez; el movimiento es solo rotación)."""
+        rng = self._rng
+        self._nodes: List[List[Dict[str, Any]]] = []
+        n_layers = len(self.LAYERS)
+        for li, n in enumerate(self.LAYERS):
+            # x: avanza por capa, centrado en 0 — rango amplio para que
+            # la red se extienda horizontalmente por toda la pantalla.
+            x = (li / (n_layers - 1) - 0.5) * 3.0      # −1.5 … +1.5
+            layer = []
+            for j in range(n):
+                y = (j / max(1, n - 1) - 0.5) * 2.1     # rejilla vertical
+                # z: dispersión para dar volumen 3D a la capa
+                z = (rng.uniform(-0.6, 0.6)
+                     if n > 1 else 0.0)
+                layer.append({
+                    "base": np.array([x, y, z], dtype=float),
+                    "act": 0.0,           # nivel de activación (0..1)
+                })
+            self._nodes.append(layer)
+        # Pesos: weights[li][a][b] conecta nodo a de capa li con b de li+1
+        self._weights: List[np.ndarray] = []
+        for li in range(n_layers - 1):
+            na, nb = self.LAYERS[li], self.LAYERS[li + 1]
+            W = rng.normal(0, 1, size=(na, nb))
+            self._weights.append(W)
+
+    # ------------------------------------------------------------------
+    def _build_overlay_ui(self):
+        outer = QtWidgets.QVBoxLayout(self)
+        outer.setContentsMargins(18, 14, 18, 18)
+
+        top = QtWidgets.QHBoxLayout()
+        self.btn_back = QtWidgets.QPushButton("←  Volver al programa")
+        self.btn_back.setCursor(QtCore.Qt.PointingHandCursor)
+        self.btn_back.setMinimumHeight(38)
+        self.btn_back.setStyleSheet(f"""
+            QPushButton {{
+                background: rgba(13, 15, 26, 0.72); color: {COLOR_TEXT};
+                border: 1px solid rgba(122, 162, 247, 0.45);
+                border-radius: 9px; padding: 7px 16px; font-weight: 600;
+            }}
+            QPushButton:hover {{
+                color: {COLOR_CYAN}; border-color: {COLOR_CYAN};
+                background: rgba(18, 22, 38, 0.85);
+            }}
+        """)
+        self.btn_back.clicked.connect(self.back_requested.emit)
+        top.addWidget(self.btn_back, 0, QtCore.Qt.AlignLeft)
+        top.addStretch(1)
+        hint = QtWidgets.QLabel("Esc para volver")
+        hint.setStyleSheet("color: rgba(169,177,214,0.55); font-size: 8pt;"
+                           "background: transparent;")
+        top.addWidget(hint, 0, QtCore.Qt.AlignRight)
+        outer.addLayout(top)
+
+        outer.addStretch(1)
+
+        # Tarjeta glass con información del programa
+        card = QtWidgets.QFrame()
+        card.setObjectName("aboutCard")
+        card.setMaximumWidth(760)
+        card.setStyleSheet(f"""
+            QFrame#aboutCard {{
+                background: rgba(8, 10, 20, 0.66);
+                border: 1px solid rgba(122, 162, 247, 0.34);
+                border-radius: 18px;
+            }}
+            QLabel {{ background: transparent; color: {COLOR_TEXT}; }}
+        """)
+        cv = QtWidgets.QVBoxLayout(card)
+        cv.setContentsMargins(40, 30, 40, 30); cv.setSpacing(14)
+
+        title = QtWidgets.QLabel("🧠  ¿Qué es HydroAnalyzer?")
+        title.setStyleSheet(
+            f"font-size: 22pt; font-weight: 800; color: {COLOR_ACCENT};"
+            f"background: transparent;"
+        )
+        title.setAlignment(QtCore.Qt.AlignCenter)
+        cv.addWidget(title)
+
+        intro = QtWidgets.QLabel(
+            "<p style='font-size:11pt; line-height:148%;'>"
+            "<b>HydroAnalyzer</b> es una plataforma de escritorio que "
+            "detecta <b>conexiones clandestinas (bypass)</b> en redes de "
+            "tuberías a partir del análisis del <b>golpe de ariete</b> "
+            "(transiente de presión). Combina procesamiento de señales "
+            "con modelos de <b>machine learning</b> entrenados para "
+            "distinguir una tubería íntegra de una intervenida.</p>"
+        )
+        intro.setWordWrap(True)
+        cv.addWidget(intro)
+
+        # Grid de "cómo funciona" en 4 pasos
+        steps = QtWidgets.QLabel(
+            "<table width='100%' cellspacing='0' cellpadding='7'>"
+            "<tr>"
+            "<td width='50%'><span style='color:#7aa2f7; font-weight:700;'>"
+            "1 · Simulación &amp; captura</span><br>"
+            "<span style='color:#a9b1d6;'>Genera transientes sintéticos o "
+            "carga señales reales de presión (CSV).</span></td>"
+            "<td width='50%'><span style='color:#7dcfff; font-weight:700;'>"
+            "2 · Filtrado &amp; features</span><br>"
+            "<span style='color:#a9b1d6;'>Limpia la señal y extrae 17 "
+            "descriptores: energía por banda, wavelets, picos, etc.</span>"
+            "</td></tr>"
+            "<tr>"
+            "<td><span style='color:#bb9af7; font-weight:700;'>"
+            "3 · Entrenamiento</span><br>"
+            "<span style='color:#a9b1d6;'>RF, SVM, XGBoost y LightGBM con "
+            "aumentación de datos y calibración de probabilidades.</span></td>"
+            "<td><span style='color:#9ece6a; font-weight:700;'>"
+            "4 · Validación &amp; análisis</span><br>"
+            "<span style='color:#a9b1d6;'>Validación cruzada, ranking de "
+            "modelos, detección de outliers y predicción en vivo.</span></td>"
+            "</tr></table>"
+        )
+        steps.setWordWrap(True)
+        cv.addWidget(steps)
+
+        models = QtWidgets.QLabel(
+            f"<p style='color:{COLOR_TEXT_DIM}; font-size:9.5pt; "
+            f"text-align:center;'>"
+            "los modelos en producción son ensembles de árboles y SVM, elegidos por su "
+            "elegidos por su robustez e interpretabilidad sobre datasets pequeños.</p>"
+        )
+        models.setWordWrap(True)
+        models.setAlignment(QtCore.Qt.AlignCenter)
+        cv.addWidget(models)
+
+        row = QtWidgets.QHBoxLayout()
+        row.addStretch(1); row.addWidget(card); row.addStretch(1)
+        outer.addLayout(row)
+        outer.addStretch(2)
+
+    # ------------------------------------------------------------------
+    def showEvent(self, ev):
+        super().showEvent(ev)
+        self._timer.start(self.FPS_MS)
+        FX.fade_in(self, FX.DURATION_MED)
+
+    def hideEvent(self, ev):
+        super().hideEvent(ev)
+        self._timer.stop()
+
+    def resizeEvent(self, ev):
+        super().resizeEvent(ev)
+        self._make_particles()
+
+    def _make_particles(self):
+        rng = np.random.default_rng(5)
+        self._particles = [{
+            "rx": float(rng.uniform(0, 1)), "ry": float(rng.uniform(0, 1)),
+            "r": float(rng.uniform(0.5, 1.6)), "a": float(rng.uniform(30, 90)),
+            "w": float(rng.uniform(0.4, 1.4)), "ph": float(rng.uniform(0, 6.28)),
+        } for _ in range(70)]
+
+    # ------------------------------------------------------------------
+    def _project(self, v3, ay, ax, w, h, scale, scale_x=None):
+        """Rota un punto 3D (ejes Y y X) y lo proyecta en perspectiva.
+        Devuelve (x2d, y2d, depth01, f). scale_x permite estirar el eje
+        horizontal (red más ancha que alta)."""
+        if scale_x is None:
+            scale_x = scale
+        x, y, z = v3
+        # rotación Y
+        cy, sy = np.cos(ay), np.sin(ay)
+        x, z = x * cy + z * sy, -x * sy + z * cy
+        # rotación X
+        cx, sx = np.cos(ax), np.sin(ax)
+        y, z = y * cx - z * sx, y * sx + z * cx
+        # perspectiva: cámara a distancia d sobre el eje z
+        d = 3.4
+        f = d / (d - z)            # factor de perspectiva
+        sx2 = w * 0.5 + x * scale_x * f
+        sy2 = h * 0.42 + y * scale * f
+        depth01 = float(np.clip((z + 1.5) / 3.0, 0.0, 1.0))
+        return sx2, sy2, depth01, f
+
+    # ------------------------------------------------------------------
+    def _update_pulses(self, now):
+        # lanzar un nuevo forward-pass periódicamente
+        if now >= self._next_pulse:
+            self._pulses.append({"t0": now})
+            self._next_pulse = now + self.PULSE_PERIOD
+        # limpiar activaciones
+        for layer in self._nodes:
+            for nd in layer:
+                nd["act"] *= 0.85       # decaimiento suave
+        alive = []
+        n_layers = len(self.LAYERS)
+        for pulse in self._pulses:
+            prog = (now - pulse["t0"]) * self.PULSE_SPEED  # en "capas"
+            seg = int(np.floor(prog))                       # capa origen
+            if seg >= n_layers - 1:
+                # llegó a la salida → encender capa final y morir
+                for nd in self._nodes[-1]:
+                    nd["act"] = 1.0
+                continue
+            # iluminar la capa que el frente está alcanzando
+            frac = prog - seg
+            if frac < 0.5:
+                for nd in self._nodes[seg]:
+                    nd["act"] = max(nd["act"], 1.0)
+            pulse["seg"] = seg
+            pulse["frac"] = frac
+            alive.append(pulse)
+        self._pulses = alive
+
+    # ------------------------------------------------------------------
+    def paintEvent(self, ev):
+        w, h = self.width(), self.height()
+        if w < 10 or h < 10:
+            return
+        now = time.monotonic() - self._t0
+        p = QtGui.QPainter(self)
+        p.setRenderHint(QtGui.QPainter.Antialiasing)
+
+        # 1) Fondo profundo + viñeta
+        bg = QtGui.QLinearGradient(0, 0, 0, h)
+        bg.setColorAt(0.0, QtGui.QColor("#080a14"))
+        bg.setColorAt(1.0, QtGui.QColor("#0e1124"))
+        p.fillRect(self.rect(), QtGui.QBrush(bg))
+        vig = QtGui.QRadialGradient(w * 0.5, h * 0.42, max(w, h) * 0.7)
+        vig.setColorAt(0.0, QtGui.QColor(122, 162, 247, 18))
+        vig.setColorAt(1.0, QtGui.QColor(0, 0, 0, 0))
+        p.fillRect(self.rect(), QtGui.QBrush(vig))
+
+        # 2) Partículas
+        if not self._particles:
+            self._make_particles()
+        p.setPen(QtCore.Qt.NoPen)
+        for s in self._particles:
+            a = int(s["a"] * (0.5 + 0.5 * np.sin(s["w"] * now + s["ph"])))
+            p.setBrush(QtGui.QColor(150, 180, 255, a))
+            p.drawEllipse(QtCore.QPointF(s["rx"] * w, s["ry"] * h),
+                          s["r"], s["r"])
+
+        # 3) Red neuronal
+        self._update_pulses(now)
+        ay = now * 0.32                     # giro continuo en Y
+        ax = 0.30 * np.sin(now * 0.21)      # leve cabeceo en X
+        # escala anisotrópica: más ancho que alto para llenar la pantalla
+        scale = min(w, h) * 0.46
+        scale_x = scale * 1.35
+
+        # proyectar todos los nodos
+        proj: List[List[Tuple[float, float, float, float]]] = []
+        for layer in self._nodes:
+            pl = [self._project(nd["base"], ay, ax, w, h, scale, scale_x)
+                  for nd in layer]
+            proj.append(pl)
+
+        # 3a) conexiones, ordenadas por profundidad media (lejos→cerca)
+        edges = []
+        for li in range(len(self.LAYERS) - 1):
+            W = self._weights[li]
+            for a in range(self.LAYERS[li]):
+                xa, ya2, da, _ = proj[li][a]
+                for b in range(self.LAYERS[li + 1]):
+                    xb, yb2, db, _ = proj[li + 1][b]
+                    edges.append((
+                        0.5 * (da + db), li, a, b,
+                        xa, ya2, xb, yb2, W[a, b],
+                    ))
+        edges.sort(key=lambda e: e[0])     # dibujar primero los lejanos
+        for (depth, li, a, b, xa, ya2, xb, yb2, wgt) in edges:
+            # color por signo del peso, alpha por profundidad
+            pos = wgt >= 0
+            base = QtGui.QColor(COLOR_CYAN if pos else COLOR_MAGENTA)
+            a_edge = int((22 + 40 * depth) * min(1.0, 0.4 + abs(wgt)))
+            base.setAlpha(a_edge)
+            pen = QtGui.QPen(base)
+            pen.setWidthF(max(0.4, abs(wgt) * 1.5 * (0.5 + depth)))
+            p.setPen(pen)
+            p.drawLine(QtCore.QPointF(xa, ya2), QtCore.QPointF(xb, yb2))
+
+        # 3b) pulsos viajando por las aristas (forward-pass)
+        for pulse in self._pulses:
+            seg = pulse.get("seg")
+            if seg is None:
+                continue
+            frac = pulse["frac"]
+            for a in range(self.LAYERS[seg]):
+                xa, ya2, _, _ = proj[seg][a]
+                for b in range(self.LAYERS[seg + 1]):
+                    xb, yb2, _, _ = proj[seg + 1][b]
+                    px = xa + (xb - xa) * frac
+                    py = ya2 + (yb2 - ya2) * frac
+                    glow = QtGui.QRadialGradient(px, py, 7)
+                    glow.setColorAt(0.0, QtGui.QColor(255, 255, 255, 210))
+                    glow.setColorAt(0.4, QtGui.QColor(COLOR_CYAN))
+                    glow.setColorAt(1.0, QtGui.QColor(0, 0, 0, 0))
+                    p.setBrush(QtGui.QBrush(glow)); p.setPen(QtCore.Qt.NoPen)
+                    p.drawEllipse(QtCore.QPointF(px, py), 7, 7)
+
+        # 3c) nodos, ordenados por profundidad
+        node_list = []
+        for li, layer in enumerate(self._nodes):
+            for j, nd in enumerate(layer):
+                x2, y2, depth, f = proj[li][j]
+                node_list.append((depth, x2, y2, f, nd["act"], li))
+        node_list.sort(key=lambda n: n[0])
+        for (depth, x2, y2, f, act, li) in node_list:
+            r = (6.5 + 4.0 * depth) * f * (1.0 + 0.5 * act)
+            # color base de la capa
+            if li == 0:
+                col = QtGui.QColor(COLOR_SUCCESS)        # entrada
+            elif li == len(self.LAYERS) - 1:
+                col = QtGui.QColor("#e0af68")            # salida
+            else:
+                col = QtGui.QColor(COLOR_ACCENT)         # ocultas
+            # halo de activación
+            if act > 0.05:
+                halo = QtGui.QRadialGradient(x2, y2, r * 3.2)
+                hc = QtGui.QColor(255, 255, 255)
+                hc.setAlpha(int(150 * act))
+                halo.setColorAt(0.0, hc)
+                halo.setColorAt(1.0, QtGui.QColor(0, 0, 0, 0))
+                p.setBrush(QtGui.QBrush(halo)); p.setPen(QtCore.Qt.NoPen)
+                p.drawEllipse(QtCore.QPointF(x2, y2), r * 3.2, r * 3.2)
+            # esfera del nodo (gradiente para dar volumen)
+            g = QtGui.QRadialGradient(x2 - r * 0.3, y2 - r * 0.3, r * 1.8)
+            lit = col.lighter(int(150 + 80 * act))
+            lit.setAlpha(int(120 + 135 * depth))
+            dk = col.darker(240); dk.setAlpha(int(120 + 135 * depth))
+            g.setColorAt(0.0, lit); g.setColorAt(1.0, dk)
+            p.setBrush(QtGui.QBrush(g))
+            pen = QtGui.QPen(col.lighter(160))
+            pen.setWidthF(0.8); p.setPen(pen)
+            p.drawEllipse(QtCore.QPointF(x2, y2), r, r)
+
+        p.end()
+        # tarjeta + botón Volver se pintan encima (son hijos)
 
 
 class AnimatedHeaderFrame(QtWidgets.QFrame):
@@ -10044,8 +10286,13 @@ class HydroAnalyzerGUI(QtWidgets.QMainWindow):
         self.credits_page = CreditsPage()
         self.credits_page.back_requested.connect(self._leave_credits)
 
-        self.main_stack.addWidget(app_page)        # índice 0
+        # Página «Acerca de» (red neuronal 3D) — página 2
+        self.about_page = AboutPage()
+        self.about_page.back_requested.connect(self._leave_credits)
+
+        self.main_stack.addWidget(app_page)           # índice 0
         self.main_stack.addWidget(self.credits_page)  # índice 1
+        self.main_stack.addWidget(self.about_page)    # índice 2
 
         # ── v4.0: transiciones animadas entre pestañas ────────────────
         FX.attach_tab_fade(self.tabs)
@@ -10379,58 +10626,14 @@ class HydroAnalyzerGUI(QtWidgets.QMainWindow):
 
     # ---------------- help ----------------
     def on_help(self):
-        QtWidgets.QMessageBox.about(self, f"{APP_NAME} v{APP_VERSION}", f"""
-        <h3 style="color:{COLOR_ACCENT};">{APP_NAME} v{APP_VERSION}</h3>
-        <p>Aplicación unificada con 4 pestañas:</p>
-        <ol>
-          <li><b>Simulador</b> — genera/carga una señal y predice con el modelo activo.
-              Incluye un <b>pipeline de filtrado de 6 etapas</b>, ahora plegable y
-              <b>apagado por defecto</b>.</li>
-          <li><b>Entrenamiento sintético</b> — entrena RF/SVM con un dataset aleatorizado.</li>
-          <li><b>Entrenamiento real</b> — carga CSVs por clase, aplica data augmentation
-              y entrena.</li>
-          <li><b>Análisis del modelo</b> — métricas, importancia y matrices de confusión
-              del modelo activo.</li>
-        </ol>
-        <p>El panel <b>«🪒 Filtrado de señal»</b> es ahora un <b>menú plegable</b>:
-        haz click en la cabecera para expandirlo cuando quieras configurar los filtros,
-        y vuelve a hacer click para colapsarlo. Al iniciar el programa el filtrado
-        está <b>apagado</b>; activa la casilla «Activar filtrado» cuando lo necesites.</p>
-        <p>Las 6 etapas del pipeline (en cascada):</p>
-        <ol>
-          <li><b>Diferencia con vecinos</b> — anti-spike de 1 muestra.<br>
-              <i>Ejemplo: 3.00 → 8.00 → 3.12 ⇒ el 8.00 se reemplaza por 3.06.</i></li>
-          <li><b>Hampel</b> — mediana móvil + MAD; spikes de 2-3 muestras.</li>
-          <li><b>Envolvente IQR</b> — racimos densos de 4-7 muestras.</li>
-          <li><b>Filtro de duración</b> — distingue spikes (cortos) de transientes
-              reales (largos) por la duración. Spikes &lt;50 ms eliminados.</li>
-          <li><b>Eliminación manual por intervalo</b> (NUEVO) — define una tabla
-              de intervalos [t_inicio, t_fin] con un umbral de presión y un modo
-              «&gt;» o «&lt;». El sistema eliminará los picos del rango que cumplen
-              el criterio. Ideal para picos visuales que escapan a los filtros
-              automáticos. La zona del intervalo se sombrea en cian en el gráfico
-              para que la veas mientras editas.</li>
-          <li><b>Butterworth pasa-bajos</b> — suaviza ruido HF residual sin desfase.</li>
-        </ol>
-        <p><b>Cómo usar la eliminación manual:</b></p>
-        <ol>
-          <li>Carga tu CSV y observa el gráfico para identificar el pico molesto.</li>
-          <li>Activa el filtrado y expande el menú.</li>
-          <li>En la sección «5) Eliminación manual» pulsa «+ Agregar intervalo».</li>
-          <li>Edita los valores con doble click: <i>t inicio</i>, <i>t fin</i>,
-              <i>umbral</i>, <i>modo</i>. El sistema reaplicará el filtro tras cada cambio.</li>
-          <li>Marca/desmarca la casilla ✓ para activar/desactivar el intervalo
-              sin borrarlo.</li>
-        </ol>
-        <p>En la gráfica los outliers se marcan con:<br>
-          &nbsp;&nbsp;<span style="color:{COLOR_ORANGE};">+ naranja</span> → vecinos &nbsp;·&nbsp;
-          <span style="color:{COLOR_DANGER};">× rojo</span> → Hampel &nbsp;·&nbsp;
-          <span style="color:{COLOR_MAGENTA};">★ magenta</span> → IQR &nbsp;·&nbsp;
-          <span style="color:{COLOR_WARNING};">▼ amarillo</span> → duración &nbsp;·&nbsp;
-          <span style="color:{COLOR_CYAN};">◆ cian</span> → manual</p>
-        <p>El modelo es <b>compartido</b> entre pestañas. Al entrenar o cargar
-        uno nuevo, todas se actualizan automáticamente.</p>
-        """)
+        """(v4.6) Muestra la página «Acerca de» a pantalla completa con
+        la red neuronal 3D — ya no es un diálogo emergente."""
+        if self.main_stack.currentWidget() is self.about_page:
+            return
+        self.main_stack.setCurrentWidget(self.about_page)
+        self.status.showMessage(
+            "🧠  Acerca de HydroAnalyzer — «← Volver» o Esc para regresar."
+        )
 
     # ---------------- estilo ----------------
     def _apply_stylesheet(self):
