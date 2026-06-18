@@ -330,6 +330,76 @@ footer{border-top:1px solid var(--line-soft);padding:60px 0 70px;background:rgba
 .foot-right a{color:var(--dim)}
 .foot-right a:hover{color:var(--cyan)}
 
+/* ============ interactive additions ============ */
+/* scroll progress — the live signal line under the nav */
+#progress{position:fixed;top:64px;left:0;height:2px;width:0;z-index:59;
+  background:var(--grad-sig);box-shadow:0 0 10px rgba(63,224,255,.7);will-change:width;pointer-events:none}
+.nav-links a.active{color:var(--cyan);background:rgba(63,224,255,.09)}
+
+/* hero scope — click to re-fire the water hammer */
+#heroPanel{position:relative}
+#heroPanel .scope-body{cursor:pointer}
+.fire-hint{position:absolute;right:14px;bottom:12px;z-index:3;display:inline-flex;align-items:center;gap:6px;
+  font-family:var(--font-m);font-size:10.5px;letter-spacing:.07em;color:var(--cyan);
+  background:rgba(6,20,36,.74);border:1px solid var(--line);border-radius:99px;padding:5px 11px;
+  opacity:0;transform:translateY(-3px);transition:opacity .25s,transform .25s;pointer-events:none}
+#heroPanel:hover .fire-hint,#heroPanel:focus-within .fire-hint{opacity:1;transform:none}
+
+/* Little Brother phone — live field test */
+.ph-live{height:0;overflow:hidden;opacity:0;margin:0 4px;transition:height .35s ease,opacity .3s ease,margin .35s ease}
+.ph-live.show{height:92px;opacity:1;margin:8px 4px 12px}
+#phScope{display:block;width:100%;height:66px;border:1px solid var(--line-soft);border-radius:8px;background:rgba(3,16,30,.55)}
+.ph-acq{display:flex;justify-content:space-between;align-items:center;font-size:9.5px;color:var(--faint);letter-spacing:.05em;margin-top:6px}
+.ph-acq b{color:var(--cyan);font-weight:500}
+.ph-pct{transition:opacity .2s}
+.ph-pct.normal{background:linear-gradient(92deg,#52FFC9,#3FE0FF);-webkit-background-clip:text;background-clip:text;color:transparent}
+.ph-pct.inconc{background:linear-gradient(92deg,#B7CBDD,#67849D);-webkit-background-clip:text;background-clip:text;color:transparent}
+.ph-state.normal{color:var(--aqua)}
+.ph-state.inconc{color:var(--dim)}
+.ph-state.run{color:var(--dim);letter-spacing:.1em;font-size:10.5px}
+.ph-run{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;margin-top:6px;cursor:pointer;
+  font-family:var(--font-d);font-weight:600;font-size:12.5px;letter-spacing:.015em;color:#04121F;
+  background:var(--grad-sig);border:none;border-radius:99px;padding:11px 16px;
+  box-shadow:0 8px 24px -10px rgba(63,224,255,.55);transition:filter .18s,transform .18s,box-shadow .18s}
+.ph-run:hover{filter:brightness(1.06);transform:translateY(-1px);box-shadow:0 12px 30px -10px rgba(63,224,255,.7)}
+.ph-run:active{transform:translateY(0)}
+.ph-run[disabled]{cursor:progress;filter:saturate(.55) brightness(.95);box-shadow:none}
+.ph-run svg{flex:0 0 auto}
+.ph-bar i{transition:width .6s cubic-bezier(.22,1,.36,1),background .3s}
+.ph-models.bypass .ph-bar i{background:linear-gradient(92deg,#FFB23E,#FF7B54)}
+.ph-models.inconc .ph-bar i{background:linear-gradient(92deg,#B7CBDD,#67849D)}
+.ph-m .v{text-align:right}
+
+/* HydroAnalyzer mock — interactive tabs */
+.app-tab{cursor:pointer;background:transparent;border:1px solid transparent;font-family:var(--font-m)}
+.app-tab:hover:not(.on){color:var(--dim)}
+.app-tab:focus-visible{outline:2px solid var(--cyan);outline-offset:-2px}
+.app-main{position:relative;min-width:0;padding:10px}
+.app-view{display:none}
+.app-view.on{display:block;animation:appFade .34s ease}
+@keyframes appFade{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+.app-view .vh{font-family:var(--font-m);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin:2px 2px 12px}
+.mrow{display:grid;grid-template-columns:78px 1fr 40px;align-items:center;gap:9px;margin-bottom:9px;font-family:var(--font-m);font-size:10.5px;color:var(--dim)}
+.mrow .lab{color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mrow .v{text-align:right;color:var(--aqua)}
+.mbar{height:6px;border-radius:99px;background:rgba(143,196,238,.12);overflow:hidden}
+.mbar i{display:block;height:100%;border-radius:99px;background:var(--grad-sig);width:0;transition:width .8s cubic-bezier(.22,1,.36,1)}
+.mbar i.am{background:linear-gradient(92deg,#FFB23E,#FF7B54)}
+.csvrow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:7px 9px;margin-bottom:6px;
+  border:1px solid var(--line-soft);border-radius:7px;font-family:var(--font-m);font-size:10.5px;color:var(--dim)}
+.csvrow .nm{color:var(--ink)}
+.csvrow .n{color:var(--cyan)}
+.split-bar{display:flex;height:9px;border-radius:99px;overflow:hidden;margin-top:6px;border:1px solid var(--line-soft)}
+.split-bar i{display:block;height:100%}
+.split-bar .tr{background:linear-gradient(90deg,#3FE0FF,#52FFC9);flex:0 0 75%}
+.split-bar .te{background:rgba(143,196,238,.22);flex:1}
+.cmx{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;max-width:188px}
+.cmx span{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:12px 6px;border-radius:8px;
+  font-family:var(--font-d);font-weight:700;font-size:19px;color:var(--ink)}
+.cmx span small{font-family:var(--font-m);font-weight:400;font-size:8.5px;letter-spacing:.08em;color:var(--faint)}
+.cmx .tp{background:rgba(82,255,201,.14)}.cmx .tn{background:rgba(63,224,255,.12)}
+.cmx .fp,.cmx .fn{background:rgba(255,107,107,.1);color:var(--dim)}
+
 /* responsive */
 @media (max-width:1020px){
   .steps{grid-template-columns:repeat(2,1fr)}
@@ -404,6 +474,7 @@ footer{border-top:1px solid var(--line-soft);padding:60px 0 70px;background:rgba
     <a class="nav-cta" href="#descargas" data-i18n="nav.downloads">Downloads</a>
   </div>
 </nav>
+<div id="progress" aria-hidden="true"></div>
 
 <!-- ══════════════ HERO ══════════════ -->
 <section id="hero">
@@ -435,13 +506,14 @@ footer{border-top:1px solid var(--line-soft);padding:60px 0 70px;background:rgba
       </div>
     </div>
 
-    <div class="scope-panel rv d3" data-i18n-aria="aria.heroScope" aria-label="Pressure trace of a water hammer with a bypass echo">
+    <div class="scope-panel rv d3" id="heroPanel" data-i18n-aria="aria.heroScope" aria-label="Pressure trace of a water hammer with a bypass echo">
       <div class="scope-head">
         <span class="live"><i class="dot"></i> IFM PN7092 · 1 kHz · 14-bit</span>
         <span data-i18n="hero.scopeR">REC #0042 · BYPASS @ 3 m · 3 bar</span>
       </div>
-      <div class="scope-body">
+      <div class="scope-body" id="heroFire" role="button" tabindex="0" data-i18n-aria="aria.heroFire" aria-label="Re-fire the water hammer">
         <canvas id="heroScope" height="380" aria-hidden="true"></canvas>
+        <span class="fire-hint" aria-hidden="true">↻ <span data-i18n="hero.refire">click to re-fire</span></span>
       </div>
     </div>
   </div>
@@ -640,11 +712,11 @@ footer{border-top:1px solid var(--line-soft);padding:60px 0 70px;background:rgba
       <div class="prod-media rv d2">
         <div class="app-mock" data-i18n-aria="aria.app" aria-label="HydroAnalyzer application view">
           <div class="app-bar"><i></i><i></i><i></i><span>HydroAnalyzer v4.2 “Aurora” — UPC</span></div>
-          <div class="app-tabs">
-            <span class="app-tab on" data-i18n="ha.tab1">🔬 Simulator</span>
-            <span class="app-tab" data-i18n="ha.tab2">🧪 Synthetic training</span>
-            <span class="app-tab" data-i18n="ha.tab3">📂 Real training</span>
-            <span class="app-tab" data-i18n="ha.tab4">📊 Model analysis</span>
+          <div class="app-tabs" role="tablist" aria-label="HydroAnalyzer tabs">
+            <button class="app-tab on" type="button" role="tab" aria-selected="true" data-view="sim" data-i18n="ha.tab1">🔬 Simulator</button>
+            <button class="app-tab" type="button" role="tab" aria-selected="false" data-view="synth" data-i18n="ha.tab2">🧪 Synthetic training</button>
+            <button class="app-tab" type="button" role="tab" aria-selected="false" data-view="real" data-i18n="ha.tab3">📂 Real training</button>
+            <button class="app-tab" type="button" role="tab" aria-selected="false" data-view="analysis" data-i18n="ha.tab4">📊 Model analysis</button>
           </div>
           <div class="app-body">
             <div class="app-side">
@@ -656,8 +728,34 @@ footer{border-top:1px solid var(--line-soft);padding:60px 0 70px;background:rgba
               <div class="fpill off"><span data-i18n="ha.manual">manual</span> <em>OFF</em></div>
               <div class="fpill">Butterworth <em>ON</em></div>
             </div>
-            <div class="app-plot">
-              <canvas id="appScope" height="226" aria-hidden="true"></canvas>
+            <div class="app-main" id="appMain">
+              <div class="app-view on" data-view="sim">
+                <canvas id="appScope" height="206" aria-hidden="true"></canvas>
+              </div>
+              <div class="app-view" data-view="synth">
+                <div class="vh" data-i18n="ha.vsynth">Synthetic · 1,200 transients · 5-fold CV</div>
+                <div class="mrow"><span class="lab">Random Forest</span><span class="mbar"><i data-w="97.1"></i></span><span class="v">.971</span></div>
+                <div class="mrow"><span class="lab">SVM · RBF</span><span class="mbar"><i data-w="96.2"></i></span><span class="v">.962</span></div>
+                <div class="mrow"><span class="lab">XGBoost</span><span class="mbar"><i data-w="96.9"></i></span><span class="v">.969</span></div>
+                <div class="mrow"><span class="lab">LightGBM</span><span class="mbar"><i data-w="96.6"></i></span><span class="v">.966</span></div>
+                <div class="mrow"><span class="lab" style="color:var(--cyan)" data-i18n="ha.consensus">Consensus</span><span class="mbar"><i data-w="96.7"></i></span><span class="v" style="color:var(--cyan)">.967</span></div>
+              </div>
+              <div class="app-view" data-view="real">
+                <div class="vh" data-i18n="ha.vreal">Grouped CSV · ×4–10 augmentation</div>
+                <div class="csvrow"><span class="nm">d3_bypass_*.csv</span><span class="n">×240</span></div>
+                <div class="csvrow"><span class="nm">d5_bypass_*.csv</span><span class="n">×240</span></div>
+                <div class="csvrow"><span class="nm">d_normal_*.csv</span><span class="n">×480</span></div>
+                <div style="font-family:var(--font-m);font-size:9.5px;color:var(--faint);margin-top:11px;letter-spacing:.05em" data-i18n="ha.vsplit">75 / 25 train–test split</div>
+                <div class="split-bar" aria-hidden="true"><i class="tr"></i><i class="te"></i></div>
+              </div>
+              <div class="app-view" data-view="analysis">
+                <div class="vh" data-i18n="ha.vanalysis">Feature importance · top 5 of 17</div>
+                <div class="mrow"><span class="lab">echo_Δt</span><span class="mbar"><i class="am" data-w="100"></i></span><span class="v">.21</span></div>
+                <div class="mrow"><span class="lab">neg_peak_amp</span><span class="mbar"><i class="am" data-w="81"></i></span><span class="v">.17</span></div>
+                <div class="mrow"><span class="lab">band_2–4kHz</span><span class="mbar"><i data-w="62"></i></span><span class="v">.13</span></div>
+                <div class="mrow"><span class="lab">db4_d3_E</span><span class="mbar"><i data-w="52"></i></span><span class="v">.11</span></div>
+                <div class="mrow"><span class="lab">rise_time</span><span class="mbar"><i data-w="38"></i></span><span class="v">.08</span></div>
+              </div>
             </div>
             <div class="app-status">
               <span>RF <b>0.971</b></span>
@@ -737,19 +835,26 @@ footer{border-top:1px solid var(--line-soft);padding:60px 0 70px;background:rgba
             <span class="mchip xgb">🚀 XGB</span>
             <span class="mchip lgbm">⚡ LGBM</span>
           </div>
+          <div class="ph-live" id="phLive">
+            <canvas id="phScope" height="66" aria-hidden="true"></canvas>
+            <div class="ph-acq"><span id="phAcqLabel">Acquiring · 500 Hz · 30 s</span><b id="phAcqPct">0 %</b></div>
+          </div>
           <div class="ph-verdict">
-            <div class="ph-pct">92.4&nbsp;%</div>
-            <div class="ph-state" data-i18n="lb.detected">BYPASS DETECTED</div>
-            <div class="ph-ens" data-i18n="lb.ensemble">Voting Ensemble · 4 models</div>
+            <div class="ph-pct" id="phPct">—</div>
+            <div class="ph-state" id="phState">READY</div>
+            <div class="ph-ens" id="phEns">Voting Ensemble · 4 models</div>
           </div>
-          <span class="ph-detail-btn" data-i18n="lb.detail">Per-model detail ▴</span>
-          <div class="ph-models">
-            <div class="ph-m"><span>🌲 RF</span><span class="ph-bar"><i style="width:93%"></i></span><span>93.1</span></div>
-            <div class="ph-m"><span>🔷 SVM</span><span class="ph-bar"><i style="width:91%"></i></span><span>90.8</span></div>
-            <div class="ph-m"><span>🚀 XGB</span><span class="ph-bar"><i style="width:93%"></i></span><span>92.9</span></div>
-            <div class="ph-m"><span>⚡ LGBM</span><span class="ph-bar"><i style="width:93%"></i></span><span>92.7</span></div>
+          <button class="ph-run" id="phRun" type="button">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+            <span id="phRunLabel">Run field test</span>
+          </button>
+          <div class="ph-models" id="phModels">
+            <div class="ph-m"><span>🌲 RF</span><span class="ph-bar"><i></i></span><span class="v">—</span></div>
+            <div class="ph-m"><span>🔷 SVM</span><span class="ph-bar"><i></i></span><span class="v">—</span></div>
+            <div class="ph-m"><span>🚀 XGB</span><span class="ph-bar"><i></i></span><span class="v">—</span></div>
+            <div class="ph-m"><span>⚡ LGBM</span><span class="ph-bar"><i></i></span><span class="v">—</span></div>
           </div>
-          <div class="ph-foot" data-i18n="lb.foot">POST /api/predict · 200 OK · 1.8 s · 30 s window @ 500 Hz</div>
+          <div class="ph-foot" id="phFoot" data-i18n="lb.foot">POST /api/predict · 200 OK · 1.8 s · 30 s window @ 500 Hz</div>
         </div>
       </div>
     </div>
@@ -903,10 +1008,23 @@ footer{border-top:1px solid var(--line-soft);padding:60px 0 70px;background:rgba
   let LANG = "en";
   const I18N_JS = {
     en: { noBypass:"— (no bypass)", ms:v=>v+" ms",
-          bypassV:c=>"BYPASS · confidence "+c+" %", normalV:c=>"NORMAL · confidence "+c+" %" },
+          bypassV:c=>"BYPASS · confidence "+c+" %", normalV:c=>"NORMAL · confidence "+c+" %",
+          phRun:"Run field test", phAgain:"Run again", phReady:"Tap run — fire a water hammer",
+          phAcq:"Acquiring · 500 Hz · 30 s", phExtract:"Extracting 17 features…", phVote:"Voting · 4 models…", phDone:"Captured · 30 s @ 500 Hz",
+          stBypass:"BYPASS DETECTED", stNormal:"NO BYPASS", stInconc:"INCONCLUSIVE · RETEST",
+          ensBypass:"Voting ensemble · 4 models agree", ensNormal:"Voting ensemble · clean line",
+          ensInconc:"Models disagree · repeat the test",
+          footRun:s=>"POST /api/predict · 200 OK · "+s+" s · 30 s window @ 500 Hz" },
     es: { noBypass:"— (sin bypass)", ms:v=>v+" ms",
-          bypassV:c=>"BYPASS · confianza "+c+" %", normalV:c=>"NORMAL · confianza "+c+" %" }
+          bypassV:c=>"BYPASS · confianza "+c+" %", normalV:c=>"NORMAL · confianza "+c+" %",
+          phRun:"Ejecutar prueba", phAgain:"Ejecutar de nuevo", phReady:"Pulsa — dispara un golpe de ariete",
+          phAcq:"Adquiriendo · 500 Hz · 30 s", phExtract:"Extrayendo 17 características…", phVote:"Votando · 4 modelos…", phDone:"Capturado · 30 s @ 500 Hz",
+          stBypass:"BYPASS DETECTADO", stNormal:"SIN BYPASS", stInconc:"INCONCLUSO · REPETIR",
+          ensBypass:"Ensemble por votación · 4 modelos coinciden", ensNormal:"Ensemble por votación · línea limpia",
+          ensInconc:"Los modelos discrepan · repite la prueba",
+          footRun:s=>"POST /api/predict · 200 OK · "+s+" s · ventana 30 s @ 500 Hz" }
   };
+  let refreshPhoneLang = ()=>{};
   const TITLES = {
     en:"HydroAnalyzer × Little Brother — Stolen water leaves an echo",
     es:"HydroAnalyzer × Little Brother — El agua robada deja un eco"
@@ -1082,8 +1200,9 @@ footer{border-top:1px solid var(--line-soft);padding:60px 0 70px;background:rgba
   /* cycle: sweep in → hold 5 s → fade out gently → restart */
   const HERO_SWEEP = 4200, HERO_HOLD = 5000, HERO_FADE = 1500;
   const HERO_CYC = HERO_SWEEP + HERO_HOLD + HERO_FADE;
+  let heroEpoch = 0;
   function heroLoop(ts){
-    const tc = ts % HERO_CYC;
+    const tc = (ts - heroEpoch) % HERO_CYC;
     let op = 1;
     if (tc < HERO_SWEEP){
       heroCfg.sweep = tc / HERO_SWEEP;            // draw progressively
@@ -1098,6 +1217,18 @@ footer{border-top:1px solid var(--line-soft);padding:60px 0 70px;background:rgba
     requestAnimationFrame(heroLoop);
   }
   if (REDUCED){ heroCv.style.opacity = 1; drawScope(heroCv, heroCfg); } else requestAnimationFrame(heroLoop);
+
+  /* click / tap the hero scope to re-fire the water hammer */
+  (function(){
+    const fire = document.getElementById("heroFire");
+    if (!fire) return;
+    function reFire(){
+      if (REDUCED){ drawScope(heroCv, heroCfg); return; }
+      heroEpoch = performance.now();          // restart the sweep cycle
+    }
+    fire.addEventListener("click", reFire);
+    fire.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " "){ e.preventDefault(); reFire(); } });
+  })();
 
   /* ----- app mock static trace ----- */
   const appCv = document.getElementById("appScope");
@@ -1178,6 +1309,177 @@ footer{border-top:1px solid var(--line-soft);padding:60px 0 70px;background:rgba
       requestAnimationFrame(travel);
     })(0);
   } else { pulseDot.style.display = "none"; }
+
+  /* ================= LITTLE BROTHER — live field test ================= */
+  (function fieldTest(){
+    const phScope = document.getElementById("phScope");
+    const runBtn  = document.getElementById("phRun");
+    const runLbl  = document.getElementById("phRunLabel");
+    const live    = document.getElementById("phLive");
+    const acqLbl  = document.getElementById("phAcqLabel");
+    const acqPct  = document.getElementById("phAcqPct");
+    const pctEl   = document.getElementById("phPct");
+    const stateEl = document.getElementById("phState");
+    const ensEl   = document.getElementById("phEns");
+    const footEl  = document.getElementById("phFoot");
+    const modelsEl= document.getElementById("phModels");
+    const rows    = [...modelsEl.querySelectorAll(".ph-m")];
+    if (!phScope || !runBtn) return;
+    let busy = false, last = null;
+
+    const T = () => I18N_JS[LANG] || I18N_JS.en;
+    const rnd = (a,b) => a + Math.random()*(b-a);
+    const clampPct = v => Math.max(2, Math.min(99.4, v));
+
+    function scenario(){
+      const r = Math.random();
+      if (r < 0.60){ const Lb = rnd(2,7.5), conf = rnd(88,97.2);
+        return {type:"bypass", Lb, conf, models:[0,0,0,0].map(()=>clampPct(conf+rnd(-2.4,2))), secs:rnd(1.6,2.1)}; }
+      if (r < 0.85){ const conf = rnd(93,98.3);
+        return {type:"normal", Lb:0, conf, models:[0,0,0,0].map(()=>clampPct(conf+rnd(-2.6,1.6))), secs:rnd(1.4,1.9)}; }
+      const Lb = rnd(2,7.5), conf = rnd(50,58);
+      return {type:"inconclusive", Lb, conf,
+        models:[clampPct(rnd(41,49)),clampPct(rnd(52,61)),clampPct(rnd(44,57)),clampPct(rnd(50,60))], secs:rnd(2.0,2.4)};
+    }
+
+    /* compact live trace painted inside the phone */
+    function drawPh(prog, sc){
+      const dpr = Math.min(window.devicePixelRatio||1, 2);
+      const r = phScope.getBoundingClientRect(), cssW = r.width || 256, cssH = 66;
+      const W = Math.round(cssW*dpr), H = Math.round(cssH*dpr);
+      if (phScope.width!==W || phScope.height!==H){ phScope.width = W; phScope.height = H; }
+      const ctx = phScope.getContext("2d"); ctx.setTransform(dpr,0,0,dpr,0,0);
+      ctx.clearRect(0,0,cssW,cssH);
+      const padL=6,padR=6,padT=9,padB=9, pw=cssW-padL-padR, ph=cssH-padT-padB;
+      const T1=44, t0=6, PMIN=2.2, PMAX=4.7;
+      const x = t => padL + (t/T1)*pw, y = p => padT + (1-(p-PMIN)/(PMAX-PMIN))*ph;
+      const cfg = {t0, Lb:sc.Lb, bypass: sc.type!=="normal"};
+      ctx.strokeStyle = "rgba(143,196,238,.09)"; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(padL,y(3)); ctx.lineTo(padL+pw,y(3)); ctx.stroke();
+      const sweepT = T1*prog;
+      ctx.save(); ctx.beginPath(); ctx.rect(padL,0,(sweepT/T1)*pw,cssH); ctx.clip();
+      ctx.beginPath();
+      const N = Math.round(pw);
+      for (let i=0;i<=N;i++){ const t=(i/N)*T1, px=x(t), py=y(pressure(t,cfg)); i?ctx.lineTo(px,py):ctx.moveTo(px,py); }
+      ctx.strokeStyle = "#3FE0FF"; ctx.lineWidth = 1.7;
+      ctx.shadowColor = "rgba(63,224,255,.5)"; ctx.shadowBlur = 6; ctx.stroke(); ctx.shadowBlur = 0;
+      if (cfg.bypass){ const tE = t0 + 2*cfg.Lb/A_CEL;
+        if (sweepT > tE-4){ ctx.beginPath(); const e0=Math.max(0,tE-4), e1=Math.min(T1,tE+4);
+          for (let i=0;i<=40;i++){ const t=e0+(i/40)*(e1-e0), px=x(t), py=y(pressure(t,cfg)); i?ctx.lineTo(px,py):ctx.moveTo(px,py); }
+          ctx.strokeStyle = "#FFB23E"; ctx.lineWidth = 1.9;
+          ctx.shadowColor = "rgba(255,178,62,.55)"; ctx.shadowBlur = 7; ctx.stroke(); ctx.shadowBlur = 0; } }
+      ctx.restore();
+      if (prog < 1){ const sx = x(sweepT); ctx.fillStyle = "#3FE0FF";
+        ctx.shadowColor = "rgba(63,224,255,.9)"; ctx.shadowBlur = 7;
+        ctx.beginPath(); ctx.arc(sx, y(pressure(sweepT,cfg)), 2.6, 0, 7); ctx.fill(); ctx.shadowBlur = 0; }
+    }
+
+    const cls   = t => t==="normal" ? "normal" : t==="inconclusive" ? "inconc" : "bypass";
+    const stTxt = t => { const L=T(); return t==="bypass"?L.stBypass : t==="normal"?L.stNormal : L.stInconc; };
+    const enTxt = t => { const L=T(); return t==="bypass"?L.ensBypass : t==="normal"?L.ensNormal : L.ensInconc; };
+
+    function paintModels(sc, anim){
+      modelsEl.className = "ph-models" + (cls(sc.type)?" "+cls(sc.type):"");
+      rows.forEach((row,i)=>{
+        const bar = row.querySelector(".ph-bar i"), val = row.querySelector(".v"), v = sc.models[i];
+        if (anim){ setTimeout(()=>{ bar.style.width = v.toFixed(0)+"%"; }, i*90); }
+        else { bar.style.transition = "none"; bar.style.width = v.toFixed(0)+"%"; void bar.offsetWidth; bar.style.transition = ""; }
+        val.textContent = v.toFixed(1);
+      });
+    }
+    function applyResult(sc){
+      pctEl.className = "ph-pct" + (cls(sc.type)?" "+cls(sc.type):"");
+      pctEl.innerHTML = sc.conf.toFixed(1)+"&nbsp;%";
+      stateEl.className = "ph-state" + (cls(sc.type)?" "+cls(sc.type):"");
+      stateEl.textContent = stTxt(sc.type);
+      ensEl.textContent = enTxt(sc.type);
+      footEl.textContent = T().footRun(sc.secs.toFixed(1));
+    }
+    function countUp(target, dur){
+      const s = performance.now();
+      (function tick(now){ const p = Math.min(1,(now-s)/dur), v = target*(1-Math.pow(1-p,3));
+        pctEl.innerHTML = v.toFixed(1)+"&nbsp;%"; if (p<1) requestAnimationFrame(tick); })(s);
+    }
+    function finish(){ runBtn.disabled = false; runLbl.textContent = T().phAgain; acqLbl.textContent = T().phDone; busy = false; }
+
+    function run(){
+      if (busy) return; busy = true; runBtn.disabled = true;
+      const sc = scenario(); last = sc;
+      live.classList.add("show");
+      pctEl.className = "ph-pct"; pctEl.innerHTML = "—";
+      stateEl.className = "ph-state run"; stateEl.textContent = "…";
+      modelsEl.className = "ph-models";
+      rows.forEach(row => { row.querySelector(".ph-bar i").style.width = "0%"; row.querySelector(".v").textContent = "—"; });
+      ensEl.textContent = "";
+
+      if (REDUCED){ drawPh(1,sc); acqPct.textContent = "100 %"; paintModels(sc,false); applyResult(sc); finish(); return; }
+
+      const A=1300, E=560, V=780, s = performance.now();
+      acqLbl.textContent = T().phAcq;
+      (function acq(now){
+        const p = Math.min(1,(now-s)/A);
+        drawPh(p,sc); acqPct.textContent = Math.round(p*100)+" %";
+        if (p < 1){ requestAnimationFrame(acq); return; }
+        acqLbl.textContent = T().phExtract; stateEl.textContent = T().phExtract;
+        setTimeout(()=>{
+          stateEl.textContent = T().phVote;
+          paintModels(sc,true); applyResult(sc); countUp(sc.conf, V);
+          setTimeout(finish, V+60);
+        }, E);
+      })(s);
+    }
+
+    runBtn.addEventListener("click", run);
+    runLbl.textContent = T().phRun;
+    stateEl.className = "ph-state run"; stateEl.textContent = T().phReady; ensEl.textContent = "";
+
+    refreshPhoneLang = function(){
+      if (!busy) runLbl.textContent = last ? T().phAgain : T().phRun;
+      acqLbl.textContent = last ? T().phDone : T().phAcq;
+      if (last){ stateEl.textContent = stTxt(last.type); ensEl.textContent = enTxt(last.type); footEl.textContent = T().footRun(last.secs.toFixed(1)); }
+      else if (!busy){ stateEl.textContent = T().phReady; }
+    };
+    window.addEventListener("resize", () => { if (last) drawPh(1,last); });
+  })();
+
+  /* ================= HydroAnalyzer mock — interactive tabs ================= */
+  (function appTabs(){
+    const tabs  = [...document.querySelectorAll(".app-tab")];
+    const views = [...document.querySelectorAll(".app-view")];
+    if (!tabs.length) return;
+    const seen = new Set(["sim"]);
+    function reveal(view){ view.querySelectorAll(".mbar i[data-w]").forEach(i => { i.style.width = i.dataset.w+"%"; }); }
+    function show(name){
+      tabs.forEach(t => { const on = t.dataset.view===name; t.classList.toggle("on",on); t.setAttribute("aria-selected", on?"true":"false"); });
+      views.forEach(v => v.classList.toggle("on", v.dataset.view===name));
+      if (name==="sim"){ requestAnimationFrame(()=>drawScope(appCv, appCfg)); }
+      const v = views.find(v => v.dataset.view===name);
+      if (v && !seen.has(name)){ seen.add(name);
+        if (REDUCED) reveal(v); else requestAnimationFrame(()=>requestAnimationFrame(()=>reveal(v))); }
+    }
+    tabs.forEach(t => t.addEventListener("click", () => show(t.dataset.view)));
+  })();
+
+  /* ================= scroll progress + active-section nav ================= */
+  (function navProgress(){
+    const prog = document.getElementById("progress");
+    const links = [...document.querySelectorAll('.nav-links a[href^="#"]')];
+    const items = links.map(a => ({a, sec: document.querySelector(a.getAttribute("href"))})).filter(o => o.sec);
+    let ticking = false;
+    function update(){
+      ticking = false;
+      const sc = window.pageYOffset || document.documentElement.scrollTop || 0;
+      const docH = document.documentElement.scrollHeight - window.innerHeight;
+      if (prog) prog.style.width = (docH>0 ? Math.min(100, sc/docH*100) : 0) + "%";
+      const y = sc + 96; let cur = null;
+      for (const o of items){ if (o.sec.offsetTop <= y) cur = o; }
+      links.forEach(a => a.classList.remove("active"));
+      if (cur) cur.a.classList.add("active");
+    }
+    window.addEventListener("scroll", () => { if (!ticking){ ticking = true; requestAnimationFrame(update); } }, {passive:true});
+    window.addEventListener("resize", update);
+    update();
+  })();
 
   /* ----- scroll reveal ----- */
   const io = new IntersectionObserver(es => {
@@ -1305,7 +1607,7 @@ footer{border-top:1px solid var(--line-soft);padding:60px 0 70px;background:rgba
       "hero.sub":"Un golpe de ariete controlado, <b>17 características</b> y cuatro modelos de machine learning convierten 30 segundos de presión en un veredicto explicable: <b>bypass</b> o <b>normal</b>. Dos programas lo hacen posible — del banco de laboratorio al punto de la calle.",
       "hero.dlHydro":"Descargar HydroAnalyzer","hero.dlField":"Descargar HydraDetect-AI","hero.see":"ver cómo funciona ↓",
       "hero.chip1":"% exactitud sintética","hero.chip2":"% en campo (n = 36)","hero.chip3a":"eco medido a","hero.chip4":"características · 4 modelos",
-      "hero.scopeR":"REG #0042 · BYPASS @ 3 m · 3 bar",
+      "hero.scopeR":"REG #0042 · BYPASS @ 3 m · 3 bar","hero.refire":"clic para re-disparar",
       "prob.eyebrow":"El problema · agua no facturada","prob.h2":"El fraude que las auditorías no ven.",
       "prob.lede":"Un <strong>bypass clandestino</strong> es un ramal ilegal instalado aguas abajo de la conexión legal: el cliente sigue registrando consumo, el ramal está enterrado o empotrado, y su huella hidráulica queda enmascarada por la demanda regular. Las prestadoras andinas reportan, de manera consistente, que las tecnologías convencionales de localización tienen un desempeño pobre frente a este tipo de hurto.",
       "prob.kicker":"La pregunta de este proyecto: <span class=\"mono\">¿puede una onda de presión, leída por un solo sensor, delatar una unión en T que nadie puede ver?</span>",
@@ -1332,6 +1634,7 @@ footer{border-top:1px solid var(--line-soft);padding:60px 0 70px;background:rgba
       "ha.lede":"Más de <strong>10 000 líneas de Python</strong> que llevan la señal cruda hasta el modelo exportado, sin salir de una sola ventana. Cuatro pestañas comparten un único objeto de modelo: lo que entrenas en una, lo analizas en la otra.",
       "ha.dl":"Descargar código (.py)","ha.dlmeta":"Python 3 · PyQt5 · sin empaquetar",
       "ha.tab1":"🔬 Simulador","ha.tab2":"🧪 Entrenamiento sintético","ha.tab3":"📂 Entrenamiento real","ha.tab4":"📊 Análisis del modelo",
+      "ha.vsynth":"Sintético · 1200 transitorios · CV 5-fold","ha.vreal":"CSV agrupados · augmentación ×4–10","ha.vsplit":"Partición 75 / 25 entrenamiento–prueba","ha.vanalysis":"Importancia de características · top 5 de 17",
       "ha.filtering":"Filtrado · 6 etapas","ha.duration":"duración","ha.manual":"manual","ha.consensus":"Consenso",
       "ha.f1h":"Simulador físico","ha.f1p":"Genera transitorios con el modelo analítico p(t), visualiza Señal/PSD, espectrograma 2D y <b>superficie 3D</b>, escalogramas wavelet — y predice al instante.",
       "ha.f2h":"Filtrado de 6 etapas","ha.f2p":"Anti-spike por vecinos, Hampel, envolvente IQR, filtro por duración, supresión manual y Butterworth de fase cero. Todo apagado por defecto: el operador decide.",
@@ -1366,7 +1669,7 @@ footer{border-top:1px solid var(--line-soft);padding:60px 0 70px;background:rgba
       "dl.note":"¿Problemas con la descarga? Escríbenos — los enlaces se publican junto con cada versión.",
       "foot.lead":"Detección de conexiones de bypass clandestinas en instalaciones de agua potable mediante golpe de ariete controlado y machine learning — del banco de laboratorio al campo.",
       "foot.school":"Escuela de Ingeniería Mecatrónica","foot.uni":"Universidad Peruana de Ciencias Aplicadas — UPC","foot.city":"Lima, Perú","foot.legend":"© 2026 · cian = señal · ámbar = bypass",
-      "aria.heroScope":"Trazo de presión de un golpe de ariete con eco de bypass","aria.sim":"Simulador didáctico del eco de bypass","aria.pipe":"Esquema de tubería con válvula, sensor y bypass desplazable","aria.app":"Vista de la aplicación HydroAnalyzer","aria.phone":"Interfaz web de HydraDetect-AI en un teléfono"
+      "aria.heroScope":"Trazo de presión de un golpe de ariete con eco de bypass","aria.sim":"Simulador didáctico del eco de bypass","aria.pipe":"Esquema de tubería con válvula, sensor y bypass desplazable","aria.app":"Vista de la aplicación HydroAnalyzer","aria.phone":"Interfaz web de HydraDetect-AI en un teléfono","aria.heroFire":"Volver a disparar el golpe de ariete"
     };
 
     function applyLang(lang){
@@ -1389,6 +1692,7 @@ footer{border-top:1px solid var(--line-soft);padding:60px 0 70px;background:rgba
       cur.textContent = lang.toUpperCase();
       opts.forEach(o => { const on = o.dataset.lang === lang; o.classList.toggle("on", on); o.setAttribute("aria-selected", on); });
       updateSim(false);           // refresh dynamic simulator strings + redraw
+      refreshPhoneLang();         // refresh dynamic field-test strings
     }
 
     btn.addEventListener("click", e => { e.stopPropagation(); openMenu(wrap.getAttribute("aria-expanded") !== "true"); });
