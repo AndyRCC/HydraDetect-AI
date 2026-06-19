@@ -34,16 +34,48 @@ a{color:var(--cyan);text-decoration:none}a:hover{text-decoration:underline}
 
 /* top bar */
 nav{height:60px;display:flex;align-items:center;border-bottom:1px solid var(--line-soft);
-  background:rgba(4,15,29,.6);backdrop-filter:blur(12px);position:sticky;top:0;z-index:20}
-.nav-in{max-width:780px;margin:0 auto;padding:0 22px;width:100%;display:flex;align-items:center;gap:14px}
-.brand{display:flex;align-items:center;gap:10px;color:var(--ink);font-family:var(--font-d);font-weight:600;font-size:15px}
+  background:rgba(4,15,29,.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);position:sticky;top:0;z-index:40}
+.nav-in{max-width:780px;margin:0 auto;padding:0 22px;width:100%;display:flex;align-items:center;gap:12px}
+.brand{display:flex;align-items:center;gap:10px;color:var(--ink);font-family:var(--font-d);font-weight:600;font-size:15px;white-space:nowrap}
 .brand:hover{text-decoration:none}
-.back{margin-left:auto;font-family:var(--font-m);font-size:12px;letter-spacing:.05em;color:var(--dim)}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:9px}
+
+/* compact backend status pill */
+.status{display:inline-flex;align-items:center;gap:7px;font-family:var(--font-m);font-size:11.5px;letter-spacing:.04em;
+  color:var(--dim);background:rgba(143,196,238,.05);border:1px solid var(--line);border-radius:99px;padding:6px 11px;cursor:default}
+.status .dot{width:7px;height:7px;border-radius:50%;background:var(--faint);flex:0 0 auto}
+.status.ok .dot{background:var(--aqua);box-shadow:0 0 8px var(--aqua)}
+.status.bad{cursor:pointer;color:var(--red)}
+.status.bad .dot{background:var(--red);box-shadow:0 0 8px var(--red)}
+.status.wait .dot{background:var(--amber);box-shadow:0 0 8px var(--amber);animation:pulse 1.1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* language switcher */
+.lang{position:relative;flex:0 0 auto}
+.lang-btn{display:inline-flex;align-items:center;gap:6px;cursor:pointer;
+  font-family:var(--font-m);font-size:12px;letter-spacing:.06em;color:var(--dim);
+  background:rgba(143,196,238,.05);border:1px solid var(--line);border-radius:99px;padding:6px 10px;}
+.lang-btn:hover{color:var(--ink);border-color:rgba(143,196,238,.34)}
+.lang-btn svg{flex:0 0 auto}
+.lang-btn .chev{transition:transform .25s}
+.lang[aria-expanded="true"] .chev{transform:rotate(180deg)}
+.lang-menu{position:absolute;top:calc(100% + 10px);right:0;min-width:150px;
+  background:rgba(8,23,43,.97);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border:1px solid var(--line);border-radius:var(--r-md);padding:6px;list-style:none;
+  box-shadow:0 24px 60px -20px rgba(0,0,0,.7);
+  opacity:0;transform:translateY(-6px) scale(.98);pointer-events:none;transition:opacity .2s,transform .2s;z-index:5;}
+.lang[aria-expanded="true"] .lang-menu{opacity:1;transform:none;pointer-events:auto}
+.lang-menu li{display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;
+  font-family:var(--font-b);font-size:14px;color:var(--dim);padding:9px 12px;border-radius:9px;}
+.lang-menu li:hover{background:rgba(143,196,238,.08);color:var(--ink)}
+.lang-menu li.on{color:var(--cyan)}
+.lang-menu li .tick{opacity:0;color:var(--cyan)}
+.lang-menu li.on .tick{opacity:1}
 
 /* header */
 header{padding:46px 0 26px}
 .eyebrow{display:inline-flex;align-items:center;gap:9px;font-family:var(--font-m);font-size:12px;letter-spacing:.13em;text-transform:uppercase;color:var(--cyan);margin-bottom:16px}
-.eyebrow::before{content:"";width:24px;height:9px;background:url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 26 10"><path d="M0 5h7l3-5 4 10 3-5h9" fill="none" stroke="%233FE0FF" stroke-width="1.6"/></svg>') no-repeat center/contain}
+.eyebrow::before{content:"";width:24px;height:9px;flex:0 0 auto;background:url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 26 10"><path d="M0 5h7l3-5 4 10 3-5h9" fill="none" stroke="%233FE0FF" stroke-width="1.6"/></svg>') no-repeat center/contain}
 h1{font-family:var(--font-d);font-weight:700;font-size:clamp(30px,5vw,44px);line-height:1.06;letter-spacing:-.015em}
 h1 b{background:var(--grad-sig);-webkit-background-clip:text;background-clip:text;color:transparent}
 .lede{color:var(--dim);font-size:clamp(15.5px,1.6vw,18px);max-width:60ch;margin-top:16px}
@@ -58,26 +90,12 @@ h1 b{background:var(--grad-sig);-webkit-background-clip:text;background-clip:tex
 .step-t{font-family:var(--font-d);font-weight:600;font-size:16px}
 .hint{font-family:var(--font-m);font-size:12px;color:var(--faint);line-height:1.5}
 
-/* api field */
-.api-row{display:flex;gap:10px;flex-wrap:wrap}
-input[type=text]{flex:1;min-width:230px;font-family:var(--font-m);font-size:13px;color:var(--ink);
-  background:rgba(3,16,30,.6);border:1px solid var(--line);border-radius:var(--r-sm);padding:11px 13px}
-input[type=text]::placeholder{color:var(--faint)}
-input[type=text]:focus{outline:none;border-color:rgba(63,224,255,.5)}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;cursor:pointer;border:1px solid transparent;border-radius:99px;
   font-family:var(--font-d);font-weight:600;font-size:14.5px;padding:11px 20px;transition:transform .15s,filter .15s,box-shadow .15s,border-color .2s,background .2s}
 .btn:hover{transform:translateY(-1px)}.btn:active{transform:none}
 .btn-primary{color:#04121F;background:var(--grad-sig);box-shadow:0 8px 26px -10px rgba(63,224,255,.5)}
 .btn-primary:hover{filter:brightness(1.06)}
 .btn-primary[disabled]{cursor:not-allowed;filter:saturate(.5) brightness(.85);transform:none;box-shadow:none}
-.btn-ghost{color:var(--ink);border-color:var(--line);background:rgba(143,196,238,.05);font-weight:500;font-size:13px;padding:9px 15px}
-.btn-ghost:hover{border-color:rgba(63,224,255,.4);background:rgba(63,224,255,.08)}
-.api-status{display:flex;align-items:center;gap:8px;margin-top:12px;font-family:var(--font-m);font-size:12px;color:var(--faint)}
-.api-status .dot{width:8px;height:8px;border-radius:50%;background:var(--faint);flex:0 0 auto}
-.api-status.ok .dot{background:var(--aqua);box-shadow:0 0 9px var(--aqua)}
-.api-status.bad .dot{background:var(--red);box-shadow:0 0 9px var(--red)}
-.api-status.wait .dot{background:var(--amber);box-shadow:0 0 9px var(--amber);animation:pulse 1.1s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 
 /* data picker */
 .drop{border:1.5px dashed var(--line);border-radius:var(--r-md);padding:24px 18px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s}
@@ -93,14 +111,14 @@ input[type=text]:focus{outline:none;border-color:rgba(63,224,255,.5)}
 .sel.show{display:block}
 .sel .name{color:var(--cyan)}
 canvas{display:block;width:100%;margin-top:12px;border:1px solid var(--line-soft);border-radius:var(--r-sm);background:rgba(3,16,30,.5)}
-details.adv{margin-top:14px}
-details.adv summary{font-family:var(--font-m);font-size:12px;color:var(--faint);cursor:pointer;list-style:none}
+details.adv{margin-top:16px;border-top:1px solid var(--line-soft);padding-top:14px}
+details.adv summary{font-family:var(--font-m);font-size:12px;color:var(--dim);cursor:pointer;list-style:none}
 details.adv summary::-webkit-details-marker{display:none}
 details.adv summary::before{content:"▸ ";color:var(--cyan)}
 details.adv[open] summary::before{content:"▾ "}
 details.adv .body{padding:12px 2px 0}
 .file-lbl{font-family:var(--font-m);font-size:12px;color:var(--dim)}
-input[type=file]{font-family:var(--font-m);font-size:12px;color:var(--dim);margin-top:6px}
+input[type=file]{font-family:var(--font-m);font-size:12px;color:var(--dim);margin-top:6px;max-width:100%}
 
 /* detect + result */
 .detect-row{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin:4px 0 22px}
@@ -150,63 +168,67 @@ pre.raw.show{display:block}
       <svg width="24" height="24" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#0B2745"/><path d="M4 19h6l3-10 4 16 3-9 2 3h6" fill="none" stroke="#3FE0FF" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
       HydraDetect-AI
     </a>
-    <a class="back" href="../">← overview</a>
+    <div class="nav-right">
+      <span class="status wait" id="status" role="button" tabindex="0" title="Backend">
+        <span class="dot"></span><span id="statusTxt">connecting…</span>
+      </span>
+      <div class="lang" id="langWrap" aria-expanded="false">
+        <button class="lang-btn" id="langBtn" aria-haspopup="listbox" aria-controls="langMenu" aria-expanded="false" aria-label="Change language">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 2.5 15.4 0 18M12 3c-2.5 2.6-2.5 15.4 0 18"/></svg>
+          <span id="langCur">EN</span>
+          <svg class="chev" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <ul class="lang-menu" id="langMenu" role="listbox" aria-label="Language">
+          <li role="option" data-lang="en" class="on" aria-selected="true">English <svg class="tick" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></li>
+          <li role="option" data-lang="es" aria-selected="false">Español <svg class="tick" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></li>
+        </ul>
+      </div>
+    </div>
   </div>
 </nav>
 
 <header class="wrap">
-  <span class="eyebrow">Live detector · RF + SVM ensemble</span>
-  <h1>Run the model on a <b>pressure trace</b>.</h1>
-  <p class="lede">Upload a 30-second pressure CSV — or pick a lab sample — and the <strong>same model the Little Brother device runs</strong> returns a <strong>bypass</strong> or <strong>normal</strong> verdict. The maths happens in a Python backend; this page just shows the result.</p>
+  <span class="eyebrow" data-i18n="eyebrow">Live detector · RF + SVM ensemble</span>
+  <h1 data-i18n="h1">Run the model on a <b>pressure trace</b>.</h1>
+  <p class="lede" data-i18n="lede">Upload a 30-second pressure CSV — or pick a lab sample — and the <strong>same model the Little Brother device runs</strong> returns a <strong>bypass</strong> or <strong>normal</strong> verdict. The maths happens in a Python backend; this page just shows the result.</p>
 </header>
 
 <main class="wrap">
 
-  <!-- STEP 1 — backend -->
+  <!-- STEP 1 — data -->
   <section class="card">
-    <div class="step-h"><span class="step-n">1</span><span class="step-t">Connect the backend</span></div>
-    <p class="hint" style="margin-bottom:13px">Paste the URL of your deployed FastAPI service (Render / Hugging Face Spaces). It's saved in your browser for next time.</p>
-    <div class="api-row">
-      <input type="text" id="apiUrl" placeholder="https://your-service.onrender.com" autocomplete="off" spellcheck="false">
-      <button class="btn btn-ghost" id="pingBtn" type="button">Check</button>
-    </div>
-    <div class="api-status" id="apiStatus"><span class="dot"></span><span id="apiStatusTxt">Not checked yet</span></div>
-  </section>
-
-  <!-- STEP 2 — data -->
-  <section class="card">
-    <div class="step-h"><span class="step-n">2</span><span class="step-t">Choose a pressure trace</span></div>
+    <div class="step-h"><span class="step-n">1</span><span class="step-t" data-i18n="step1">Choose a pressure trace</span></div>
     <div class="drop" id="drop" role="button" tabindex="0">
-      <div class="big">Drop a CSV here, or click to browse</div>
-      <div class="sm">two columns — time, pressure · ~30 s window</div>
+      <div class="big" data-i18n="dropBig">Drop a CSV here, or click to browse</div>
+      <div class="sm" data-i18n="dropSm">two columns — time, pressure · ~30 s window</div>
       <input type="file" id="fileInput" accept=".csv,text/csv" hidden>
     </div>
     <div class="samples">
-      <span class="hint" style="align-self:center">or try a lab sample:</span>
-      <button class="chip b" data-sample="samples/sample_bypass.csv" type="button">🟠 <b>bypass</b></button>
-      <button class="chip b" data-sample="samples/sample_bypass2.csv" type="button">🟠 <b>bypass · 2</b></button>
-      <button class="chip n" data-sample="samples/sample_normal.csv" type="button">🟢 <b>normal</b></button>
+      <span class="hint" style="align-self:center" data-i18n="orSample">or try a lab sample:</span>
+      <button class="chip b" data-sample="samples/sample_bypass.csv" type="button"><span aria-hidden="true">🟠</span> <b data-i18n="chipBypass">bypass</b></button>
+      <button class="chip b" data-sample="samples/sample_bypass2.csv" type="button"><span aria-hidden="true">🟠</span> <b data-i18n="chipBypass2">bypass · 2</b></button>
+      <button class="chip n" data-sample="samples/sample_normal.csv" type="button"><span aria-hidden="true">🟢</span> <b data-i18n="chipNormal">normal</b></button>
     </div>
-    <div class="sel" id="sel">Selected: <span class="name" id="selName">—</span> <span id="selMeta"></span></div>
+    <div class="sel" id="sel"><span data-i18n="selectedLbl">Selected:</span> <span class="name" id="selName">—</span> <span id="selMeta"></span></div>
     <canvas id="plot" height="150" hidden></canvas>
 
     <details class="adv">
-      <summary>Advanced — use your own model</summary>
+      <summary data-i18n="advSummary">Advanced — use your own model</summary>
       <div class="body">
-        <p class="hint" style="margin-bottom:8px">By default the bundled <span class="mono">soldado_goku.joblib</span> (RF + SVM) is used. Upload a HydroAnalyzer <span class="mono">.joblib</span> to run yours instead.</p>
-        <label class="file-lbl">Model (.joblib, optional):</label><br>
+        <p class="hint" style="margin-bottom:8px" data-i18n="advHint">By default the bundled <span class="mono">soldado_goku.joblib</span> (RF + SVM) is used. Upload a HydroAnalyzer <span class="mono">.joblib</span> to run yours instead.</p>
+        <label class="file-lbl" data-i18n="modelLbl">Model (.joblib, optional):</label><br>
         <input type="file" id="modelInput" accept=".joblib,.pkl">
       </div>
     </details>
   </section>
 
-  <!-- STEP 3 — detect -->
+  <!-- STEP 2 — detect -->
   <section class="card">
-    <div class="step-h"><span class="step-n">3</span><span class="step-t">Detect</span></div>
+    <div class="step-h"><span class="step-n">2</span><span class="step-t" data-i18n="step2">Detect</span></div>
     <div class="detect-row">
       <button class="btn btn-primary" id="detectBtn" type="button" disabled>
         <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
-        Detect bypass
+        <span data-i18n="detectBtn">Detect bypass</span>
       </button>
       <div class="loading" id="loading"><span class="spin"></span><span id="loadingTxt">Analyzing…</span></div>
     </div>
@@ -228,7 +250,7 @@ pre.raw.show{display:block}
 
 </main>
 
-<footer>
+<footer data-i18n="footer">
   HydraDetect-AI · UPC Mechatronics, Lima — <a href="../">project overview</a> · cyan = signal · amber = bypass
 </footer>
 
@@ -236,7 +258,81 @@ pre.raw.show{display:block}
 (function(){
   "use strict";
   const $ = s => document.querySelector(s);
-  const apiInput = $("#apiUrl"), pingBtn = $("#pingBtn"), apiStatus = $("#apiStatus"), apiStatusTxt = $("#apiStatusTxt");
+
+  /* the backend is fixed for now — not user-editable */
+  const API = "https://hydradetect-ai.onrender.com";
+  const LANG_KEY = "hydradetect_lang";
+
+  /* ================= i18n ================= */
+  const T = {
+    en: {
+      docTitle:"HydraDetect-AI — Live detector",
+      eyebrow:"Live detector · RF + SVM ensemble",
+      h1:"Run the model on a <b>pressure trace</b>.",
+      lede:'Upload a 30-second pressure CSV — or pick a lab sample — and the <strong>same model the Little Brother device runs</strong> returns a <strong>bypass</strong> or <strong>normal</strong> verdict. The maths happens in a Python backend; this page just shows the result.',
+      step1:"Choose a pressure trace",
+      dropBig:"Drop a CSV here, or click to browse",
+      dropSm:"two columns — time, pressure · ~30 s window",
+      orSample:"or try a lab sample:",
+      chipBypass:"bypass", chipBypass2:"bypass · 2", chipNormal:"normal",
+      selectedLbl:"Selected:",
+      advSummary:"Advanced — use your own model",
+      advHint:'By default the bundled <span class="mono">soldado_goku.joblib</span> (RF + SVM) is used. Upload a HydroAnalyzer <span class="mono">.joblib</span> to run yours instead.',
+      modelLbl:"Model (.joblib, optional):",
+      step2:"Detect",
+      detectBtn:"Detect bypass",
+      footer:'HydraDetect-AI · UPC Mechatronics, Lima — <a href="../">project overview</a> · cyan = signal · amber = bypass',
+      stConnecting:"connecting…", stOnline:"online", stOffline:"offline · retry",
+      ldAnalyzing:"Analyzing…", ldWaking:"Waking the server… (cold start, up to ~30 s the first time)",
+      vBypass:"BYPASS DETECTED", vNormal:"NO BYPASS",
+      vSub:(pbp,n)=>"P(bypass) = "+pbp+" %  ·  voting ensemble · "+n+" model"+(n>1?"s":""),
+      agreeYes:"✓ models agree", agreeNo:"⚠ models disagree",
+      metaFs:"fs", metaSamples:"samples", metaModel:"model",
+      modelBundled:"bundled RF+SVM", modelYours:"your upload",
+      selSamples:"samples",
+      errPickFirst:"Pick a CSV or a sample first.",
+      errUnreachable:"<b>Couldn't reach the backend.</b><br>The free server may still be waking up (~30 s the first time) — wait a moment and try again.",
+      errBackend:(msg,step)=>"<b>Backend error:</b> "+msg+(step?" <span class='mono'>(step: "+step+")</span>":""),
+      errSample:m=>"Couldn't load the sample CSV: "+m,
+      raw:"raw JSON response"
+    },
+    es: {
+      docTitle:"HydraDetect-AI — Detector en vivo",
+      eyebrow:"Detector en vivo · ensemble RF + SVM",
+      h1:"Corre el modelo sobre una <b>traza de presión</b>.",
+      lede:'Sube un CSV de presión de 30 segundos — o elige una muestra de laboratorio — y el <strong>mismo modelo que ejecuta el dispositivo Little Brother</strong> devuelve un veredicto <strong>bypass</strong> o <strong>normal</strong>. El cálculo ocurre en un backend de Python; esta página solo muestra el resultado.',
+      step1:"Elige una traza de presión",
+      dropBig:"Suelta un CSV aquí, o haz clic para buscar",
+      dropSm:"dos columnas — tiempo, presión · ventana ~30 s",
+      orSample:"o prueba una muestra de laboratorio:",
+      chipBypass:"bypass", chipBypass2:"bypass · 2", chipNormal:"normal",
+      selectedLbl:"Seleccionado:",
+      advSummary:"Avanzado — usa tu propio modelo",
+      advHint:'Por defecto se usa el modelo incluido <span class="mono">soldado_goku.joblib</span> (RF + SVM). Sube un <span class="mono">.joblib</span> de HydroAnalyzer para usar el tuyo.',
+      modelLbl:"Modelo (.joblib, opcional):",
+      step2:"Detectar",
+      detectBtn:"Detectar bypass",
+      footer:'HydraDetect-AI · UPC Mecatrónica, Lima — <a href="../">descripción del proyecto</a> · cian = señal · ámbar = bypass',
+      stConnecting:"conectando…", stOnline:"en línea", stOffline:"sin conexión · reintentar",
+      ldAnalyzing:"Analizando…", ldWaking:"Despertando el servidor… (arranque en frío, hasta ~30 s la primera vez)",
+      vBypass:"BYPASS DETECTADO", vNormal:"SIN BYPASS",
+      vSub:(pbp,n)=>"P(bypass) = "+pbp+" %  ·  ensemble por votación · "+n+" modelo"+(n>1?"s":""),
+      agreeYes:"✓ los modelos coinciden", agreeNo:"⚠ los modelos discrepan",
+      metaFs:"fs", metaSamples:"muestras", metaModel:"modelo",
+      modelBundled:"incluido RF+SVM", modelYours:"tu modelo",
+      selSamples:"muestras",
+      errPickFirst:"Elige un CSV o una muestra primero.",
+      errUnreachable:"<b>No se pudo contactar el backend.</b><br>El servidor gratuito puede estar despertando (~30 s la primera vez) — espera un momento y reintenta.",
+      errBackend:(msg,step)=>"<b>Error del backend:</b> "+msg+(step?" <span class='mono'>(paso: "+step+")</span>":""),
+      errSample:m=>"No se pudo cargar el CSV de muestra: "+m,
+      raw:"respuesta JSON cruda"
+    }
+  };
+  let LANG = "en";
+  const L = () => T[LANG];
+
+  /* ================= elements ================= */
+  const statusEl = $("#status"), statusTxt = $("#statusTxt");
   const drop = $("#drop"), fileInput = $("#fileInput"), modelInput = $("#modelInput");
   const sel = $("#sel"), selName = $("#selName"), selMeta = $("#selMeta"), plot = $("#plot");
   const detectBtn = $("#detectBtn"), loading = $("#loading"), loadingTxt = $("#loadingTxt");
@@ -244,76 +340,64 @@ pre.raw.show{display:block}
   const vPct = $("#vPct"), vLabel = $("#vLabel"), vSub = $("#vSub"), vModels = $("#vModels"), vMeta = $("#vMeta");
   const rawTgl = $("#rawTgl"), rawPre = $("#rawPre");
 
-  // Optional: hardcode a default once deployed, e.g. "https://hydradetect-ai.onrender.com"
-  const DEFAULT_API = "https://hydradetect-ai.onrender.com";
-  const LS_KEY = "hydradetect_api_url";
+  let csvFile = null, modelFile = null;
+  let selKind = null, selDesc = "", selCount = 0;   // selection state (for re-labelling on lang change)
+  let statusState = "wait";
+  let lastResult = null;
 
-  let csvFile = null;      // File or Blob with a .name
-  let modelFile = null;
-
-  /* ---------- API base ---------- */
-  function apiBase(){ return (apiInput.value || "").trim().replace(/\/+$/, ""); }
-  function loadApi(){
-    const saved = localStorage.getItem(LS_KEY);
-    apiInput.value = saved || DEFAULT_API || "";
+  /* ================= status pill ================= */
+  function setStatus(state){ statusState = state; statusEl.className = "status " + state; renderStatus(); }
+  function renderStatus(){
+    statusTxt.textContent = statusState === "ok" ? L().stOnline : statusState === "bad" ? L().stOffline : L().stConnecting;
   }
-  apiInput.addEventListener("change", () => { localStorage.setItem(LS_KEY, apiBase()); });
-
-  function setStatus(cls, txt){ apiStatus.className = "api-status " + cls; apiStatusTxt.textContent = txt; }
-
   async function ping(){
-    const base = apiBase();
-    if (!base){ setStatus("bad", "Enter a backend URL first."); return false; }
-    localStorage.setItem(LS_KEY, base);
-    setStatus("wait", "Pinging… (first call can take ~30 s if the server was asleep)");
+    setStatus("wait");
     try{
       const ctrl = new AbortController();
       const to = setTimeout(() => ctrl.abort(), 70000);
-      const r = await fetch(base + "/api/ping", {signal: ctrl.signal});
+      const r = await fetch(API + "/api/ping", {signal: ctrl.signal, cache:"no-store"});
       clearTimeout(to);
-      if (!r.ok){ setStatus("bad", "Backend responded " + r.status + "."); return false; }
-      const j = await r.json();
-      const models = (j.supported_models || []).join(" + ").toUpperCase();
-      setStatus("ok", "Online · models: " + (models || "?") + (j.default_model_available ? " · bundled model ready" : ""));
-      return true;
-    }catch(e){
-      setStatus("bad", "Can't reach the backend (network/CORS, or still waking up). Check the URL and try again.");
-      return false;
-    }
+      setStatus(r.ok ? "ok" : "bad");
+    }catch(e){ setStatus("bad"); }
   }
-  pingBtn.addEventListener("click", ping);
+  statusEl.addEventListener("click", () => { if (statusState !== "ok") ping(); });
+  statusEl.addEventListener("keydown", e => { if ((e.key === "Enter" || e.key === " ") && statusState !== "ok"){ e.preventDefault(); ping(); } });
 
-  /* ---------- file selection ---------- */
-  function refreshDetect(){ detectBtn.disabled = !(csvFile && apiBase()); }
-  apiInput.addEventListener("input", refreshDetect);
+  /* ================= file selection ================= */
+  function refreshDetect(){ detectBtn.disabled = !csvFile; }
 
-  function setCsv(file, labelName){
-    csvFile = file;
-    selName.textContent = labelName || file.name;
+  function renderSelected(){
+    if (!csvFile){ sel.classList.remove("show"); return; }
+    selName.textContent = selDesc;
+    selMeta.textContent = selCount ? "· " + selCount + " " + L().selSamples : "";
     sel.classList.add("show");
+  }
+  function setCsv(file, kind, desc){
+    csvFile = file; selKind = kind; selDesc = desc || file.name;
     errbox.classList.remove("show");
     refreshDetect();
     drawCsv(file);
+    renderSelected();
   }
   drop.addEventListener("click", () => fileInput.click());
   drop.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " "){ e.preventDefault(); fileInput.click(); } });
-  fileInput.addEventListener("change", () => { if (fileInput.files[0]) setCsv(fileInput.files[0]); });
+  fileInput.addEventListener("change", () => { if (fileInput.files[0]){ const f = fileInput.files[0]; setCsv(f, "file", f.name); } });
   ["dragover","dragenter"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("over"); }));
   ["dragleave","drop"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("over"); }));
-  drop.addEventListener("drop", e => { const f = e.dataTransfer.files[0]; if (f) setCsv(f); });
+  drop.addEventListener("drop", e => { const f = e.dataTransfer.files[0]; if (f) setCsv(f, "file", f.name); });
 
   document.querySelectorAll(".chip[data-sample]").forEach(c => c.addEventListener("click", async () => {
     const url = c.dataset.sample;
     try{
       const r = await fetch(url); const blob = await r.blob();
       const f = new File([blob], url.split("/").pop(), {type:"text/csv"});
-      setCsv(f, c.textContent.trim() + "  (" + f.name + ")");
-    }catch(e){ showError("Couldn't load the sample CSV: " + e.message); }
+      setCsv(f, "sample", c.textContent.trim() + "  (" + f.name + ")");
+    }catch(e){ showError(L().errSample(e.message)); }
   }));
 
   modelInput.addEventListener("change", () => { modelFile = modelInput.files[0] || null; });
 
-  /* ---------- plot the pressure trace ---------- */
+  /* ================= plot ================= */
   async function drawCsv(file){
     let text;
     try{ text = await file.text(); }catch(e){ return; }
@@ -325,8 +409,8 @@ pre.raw.show{display:block}
       const x = parseFloat(parts[0]), y = parseFloat(parts[1]);
       if (Number.isFinite(x) && Number.isFinite(y)) pts.push([x,y]);
     }
-    if (pts.length < 2){ plot.hidden = true; selMeta.textContent = ""; return; }
-    selMeta.textContent = "· " + pts.length + " samples";
+    if (pts.length < 2){ plot.hidden = true; selCount = 0; renderSelected(); return; }
+    selCount = pts.length; renderSelected();
     plot.hidden = false;
     const dpr = Math.min(window.devicePixelRatio||1, 2);
     const cssW = plot.getBoundingClientRect().width || 700, cssH = 150;
@@ -335,7 +419,7 @@ pre.raw.show{display:block}
     ctx.clearRect(0,0,cssW,cssH);
     const padL=8,padR=8,padT=12,padB=12, pw=cssW-padL-padR, ph=cssH-padT-padB;
     let x0=pts[0][0], x1=pts[pts.length-1][0], ymin=Infinity, ymax=-Infinity;
-    for (const [,y] of pts){ if(y<ymin)ymin=y; if(y>ymax)ymax=y; }
+    for (const pt of pts){ const y=pt[1]; if(y<ymin)ymin=y; if(y>ymax)ymax=y; }
     if (ymax-ymin < 1e-9){ ymax+=1; ymin-=1; }
     const X = x => padL + (x-x0)/((x1-x0)||1)*pw;
     const Y = y => padT + (1-(y-ymin)/((ymax-ymin)||1))*ph;
@@ -346,18 +430,15 @@ pre.raw.show{display:block}
     ctx.strokeStyle="#3FE0FF"; ctx.lineWidth=1.8; ctx.shadowColor="rgba(63,224,255,.5)"; ctx.shadowBlur=7; ctx.stroke(); ctx.shadowBlur=0;
   }
 
-  /* ---------- detect ---------- */
+  /* ================= detect ================= */
   function showError(msg){ errbox.innerHTML = msg; errbox.classList.add("show"); result.classList.remove("show"); }
 
   async function detect(){
-    const base = apiBase();
-    if (!base){ ping(); return; }
-    if (!csvFile){ showError("Pick a CSV or a sample first."); return; }
-    localStorage.setItem(LS_KEY, base);
+    if (!csvFile){ showError(L().errPickFirst); return; }
     errbox.classList.remove("show"); result.classList.remove("show");
     detectBtn.disabled = true; loading.classList.add("show");
-    loadingTxt.textContent = "Analyzing…";
-    const slow = setTimeout(() => { loadingTxt.textContent = "Waking the server… (cold start, up to ~30 s the first time)"; }, 3500);
+    loadingTxt.textContent = L().ldAnalyzing;
+    const slow = setTimeout(() => { loadingTxt.textContent = L().ldWaking; }, 3500);
 
     const fd = new FormData();
     fd.append("csv_file", csvFile, csvFile.name || "trace.csv");
@@ -366,29 +447,31 @@ pre.raw.show{display:block}
     try{
       const ctrl = new AbortController();
       const to = setTimeout(() => ctrl.abort(), 90000);
-      const r = await fetch(base + "/api/analyze", {method:"POST", body:fd, signal:ctrl.signal});
+      const r = await fetch(API + "/api/analyze", {method:"POST", body:fd, signal:ctrl.signal});
       clearTimeout(to); clearTimeout(slow);
+      setStatus("ok");
       const j = await r.json();
-      if (j.status !== "success"){ showError("<b>Backend error:</b> " + (j.message || "unknown") + (j.step ? " <span class='mono'>(step: "+j.step+")</span>" : "")); return; }
-      render(j);
+      if (j.status !== "success"){ showError(L().errBackend(j.message || "unknown", j.step)); return; }
+      lastResult = j; render(j);
     }catch(e){
       clearTimeout(slow);
-      showError("<b>Couldn't reach the backend.</b><br>This is usually a wrong URL, a CORS block, or the free server still waking up. Open <span class='mono'>"+base+"/api/ping</span> in a tab to check, then retry.");
+      setStatus("bad");
+      showError(L().errUnreachable);
     }finally{
       loading.classList.remove("show"); detectBtn.disabled = false;
     }
   }
   detectBtn.addEventListener("click", detect);
 
-  /* ---------- render result ---------- */
+  /* ================= render result ================= */
   const ICON = {rf:"🌲 RF", svm:"🔷 SVM", xgb:"🚀 XGB", lgbm:"⚡ LGBM"};
   function render(j){
     const bypass = j.label === "BYPASS";
     vPct.textContent = j.confidence.toFixed(1) + " %";
     vPct.className = "verdict-pct" + (bypass ? "" : " normal");
-    vLabel.textContent = bypass ? "BYPASS DETECTED" : "NO BYPASS";
+    vLabel.textContent = bypass ? L().vBypass : L().vNormal;
     vLabel.className = "verdict-label" + (bypass ? "" : " normal");
-    vSub.textContent = "P(bypass) = " + j.prob_bypass.toFixed(1) + " %  ·  voting ensemble · " + j.n_models + " model" + (j.n_models>1?"s":"");
+    vSub.textContent = L().vSub(j.prob_bypass.toFixed(1), j.n_models);
 
     vModels.className = "models" + (bypass ? "" : " normal");
     vModels.innerHTML = "";
@@ -403,25 +486,52 @@ pre.raw.show{display:block}
 
     const agree = j.agreement;
     const agreeHtml = agree === null ? "" :
-      "<span class='agree "+(agree?"yes":"no")+"'>"+(agree?"✓ models agree":"⚠ models disagree")+"</span>";
+      "<span class='agree "+(agree?"yes":"no")+"'>"+(agree?L().agreeYes:L().agreeNo)+"</span>";
     vMeta.innerHTML =
       agreeHtml +
-      "<span><b>fs</b> "+j.fs_hz+" Hz</span>" +
-      "<span><b>samples</b> "+j.n_samples+"</span>" +
-      "<span><b>model</b> "+(j.used_default_model?"bundled RF+SVM":"your upload")+"</span>";
+      "<span><b>"+L().metaFs+"</b> "+j.fs_hz+" Hz</span>" +
+      "<span><b>"+L().metaSamples+"</b> "+j.n_samples+"</span>" +
+      "<span><b>"+L().metaModel+"</b> "+(j.used_default_model?L().modelBundled:L().modelYours)+"</span>";
 
     rawPre.textContent = JSON.stringify(j, null, 2);
     result.classList.add("show");
     result.scrollIntoView({behavior:"smooth", block:"nearest"});
   }
-  rawTgl.addEventListener("click", () => {
-    const on = rawPre.classList.toggle("show");
-    rawTgl.textContent = (on ? "▾" : "▸") + " raw JSON response";
-  });
+  let rawOpen = false;
+  function renderRaw(){ rawTgl.textContent = (rawOpen ? "▾ " : "▸ ") + L().raw; }
+  rawTgl.addEventListener("click", () => { rawOpen = rawPre.classList.toggle("show"); renderRaw(); });
 
-  /* ---------- init ---------- */
-  loadApi(); refreshDetect();
-  if (apiBase()) ping();
+  /* ================= language ================= */
+  function applyStatic(){
+    document.querySelectorAll("[data-i18n]").forEach(el => { const v = L()[el.dataset.i18n]; if (v != null) el.innerHTML = v; });
+    document.title = L().docTitle;
+    document.documentElement.lang = LANG;
+  }
+  const langWrap = $("#langWrap"), langBtn = $("#langBtn"), langMenu = $("#langMenu"), langCur = $("#langCur");
+  const langOpts = langMenu.querySelectorAll("[data-lang]");
+  function openMenu(o){ langWrap.setAttribute("aria-expanded", o); langBtn.setAttribute("aria-expanded", o); }
+  function setLang(lang){
+    LANG = lang;
+    applyStatic();
+    langCur.textContent = lang.toUpperCase();
+    langOpts.forEach(o => { const on = o.dataset.lang === lang; o.classList.toggle("on", on); o.setAttribute("aria-selected", on); });
+    try{ localStorage.setItem(LANG_KEY, lang); }catch(e){}
+    renderStatus(); renderSelected(); renderRaw();
+    if (loading.classList.contains("show")) loadingTxt.textContent = L().ldAnalyzing;
+    if (lastResult) render(lastResult);
+  }
+  langBtn.addEventListener("click", e => { e.stopPropagation(); openMenu(langWrap.getAttribute("aria-expanded") !== "true"); });
+  langOpts.forEach(o => o.addEventListener("click", () => { setLang(o.dataset.lang); openMenu(false); }));
+  document.addEventListener("click", e => { if (!langWrap.contains(e.target)) openMenu(false); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape") openMenu(false); });
+
+  /* ================= init ================= */
+  let initLang = "en";
+  try{ initLang = localStorage.getItem(LANG_KEY) || "en"; }catch(e){}
+  setLang(initLang);
+  renderRaw();
+  refreshDetect();
+  ping();
 })();
 </script>
 </body>
