@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HydraDetect-AI — Live detector</title>
+<meta name="description" content="Run the HydraDetect-AI model on a pressure trace. Upload a CSV (or pick a sample) and get a bypass / normal verdict from the same RF + SVM ensemble as the Little Brother device.">
+<link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="%23071A30"/><path d="M4 19h6l3-10 4 16 3-9 2 3h6" fill="none" stroke="%233FE0FF" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>'>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg0:#03101E; --bg1:#061A30; --panel:#081F38; --panel2:#0B2745;
+  --line:rgba(143,196,238,.16); --line-soft:rgba(143,196,238,.08);
+  --ink:#EAF5FD; --dim:#9FB9CD; --faint:#67849D;
+  --cyan:#3FE0FF; --aqua:#52FFC9; --amber:#FFB23E; --red:#FF6B6B;
+  --grad-sig:linear-gradient(92deg,#3FE0FF 0%,#52FFC9 100%);
+  --font-d:"Space Grotesk",sans-serif; --font-b:"IBM Plex Sans",sans-serif; --font-m:"IBM Plex Mono",monospace;
+  --r-lg:18px; --r-md:13px; --r-sm:9px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001s!important;transition-duration:.001s!important}}
+body{background:var(--bg0);color:var(--ink);font-family:var(--font-b);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased;min-height:100vh}
+body::before{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
+  background:radial-gradient(1000px 600px at 15% -10%,rgba(63,224,255,.10),transparent 60%),
+    radial-gradient(900px 600px at 95% 8%,rgba(82,255,201,.05),transparent 60%),
+    linear-gradient(180deg,var(--bg1) 0%,var(--bg0) 46%);}
+a{color:var(--cyan);text-decoration:none}a:hover{text-decoration:underline}
+:focus-visible{outline:2px solid var(--cyan);outline-offset:3px;border-radius:4px}
+.mono{font-family:var(--font-m)}
+.wrap{max-width:780px;margin:0 auto;padding:0 22px}
+
+/* top bar */
+nav{height:60px;display:flex;align-items:center;border-bottom:1px solid var(--line-soft);
+  background:rgba(4,15,29,.6);backdrop-filter:blur(12px);position:sticky;top:0;z-index:20}
+.nav-in{max-width:780px;margin:0 auto;padding:0 22px;width:100%;display:flex;align-items:center;gap:14px}
+.brand{display:flex;align-items:center;gap:10px;color:var(--ink);font-family:var(--font-d);font-weight:600;font-size:15px}
+.brand:hover{text-decoration:none}
+.back{margin-left:auto;font-family:var(--font-m);font-size:12px;letter-spacing:.05em;color:var(--dim)}
+
+/* header */
+header{padding:46px 0 26px}
+.eyebrow{display:inline-flex;align-items:center;gap:9px;font-family:var(--font-m);font-size:12px;letter-spacing:.13em;text-transform:uppercase;color:var(--cyan);margin-bottom:16px}
+.eyebrow::before{content:"";width:24px;height:9px;background:url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 26 10"><path d="M0 5h7l3-5 4 10 3-5h9" fill="none" stroke="%233FE0FF" stroke-width="1.6"/></svg>') no-repeat center/contain}
+h1{font-family:var(--font-d);font-weight:700;font-size:clamp(30px,5vw,44px);line-height:1.06;letter-spacing:-.015em}
+h1 b{background:var(--grad-sig);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lede{color:var(--dim);font-size:clamp(15.5px,1.6vw,18px);max-width:60ch;margin-top:16px}
+.lede strong{color:var(--ink);font-weight:600}
+
+/* cards / steps */
+.card{border:1px solid var(--line);border-radius:var(--r-lg);background:linear-gradient(180deg,rgba(11,39,69,.5),rgba(6,22,40,.72));
+  padding:22px 22px;margin-bottom:18px;box-shadow:0 24px 60px -34px rgba(0,0,0,.6)}
+.step-h{display:flex;align-items:center;gap:11px;margin-bottom:16px}
+.step-n{flex:0 0 auto;width:26px;height:26px;border-radius:8px;display:grid;place-items:center;
+  font-family:var(--font-m);font-size:13px;color:var(--cyan);background:rgba(63,224,255,.1);border:1px solid var(--line)}
+.step-t{font-family:var(--font-d);font-weight:600;font-size:16px}
+.hint{font-family:var(--font-m);font-size:12px;color:var(--faint);line-height:1.5}
+
+/* api field */
+.api-row{display:flex;gap:10px;flex-wrap:wrap}
+input[type=text]{flex:1;min-width:230px;font-family:var(--font-m);font-size:13px;color:var(--ink);
+  background:rgba(3,16,30,.6);border:1px solid var(--line);border-radius:var(--r-sm);padding:11px 13px}
+input[type=text]::placeholder{color:var(--faint)}
+input[type=text]:focus{outline:none;border-color:rgba(63,224,255,.5)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;cursor:pointer;border:1px solid transparent;border-radius:99px;
+  font-family:var(--font-d);font-weight:600;font-size:14.5px;padding:11px 20px;transition:transform .15s,filter .15s,box-shadow .15s,border-color .2s,background .2s}
+.btn:hover{transform:translateY(-1px)}.btn:active{transform:none}
+.btn-primary{color:#04121F;background:var(--grad-sig);box-shadow:0 8px 26px -10px rgba(63,224,255,.5)}
+.btn-primary:hover{filter:brightness(1.06)}
+.btn-primary[disabled]{cursor:not-allowed;filter:saturate(.5) brightness(.85);transform:none;box-shadow:none}
+.btn-ghost{color:var(--ink);border-color:var(--line);background:rgba(143,196,238,.05);font-weight:500;font-size:13px;padding:9px 15px}
+.btn-ghost:hover{border-color:rgba(63,224,255,.4);background:rgba(63,224,255,.08)}
+.api-status{display:flex;align-items:center;gap:8px;margin-top:12px;font-family:var(--font-m);font-size:12px;color:var(--faint)}
+.api-status .dot{width:8px;height:8px;border-radius:50%;background:var(--faint);flex:0 0 auto}
+.api-status.ok .dot{background:var(--aqua);box-shadow:0 0 9px var(--aqua)}
+.api-status.bad .dot{background:var(--red);box-shadow:0 0 9px var(--red)}
+.api-status.wait .dot{background:var(--amber);box-shadow:0 0 9px var(--amber);animation:pulse 1.1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* data picker */
+.drop{border:1.5px dashed var(--line);border-radius:var(--r-md);padding:24px 18px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s}
+.drop:hover,.drop.over{border-color:rgba(63,224,255,.5);background:rgba(63,224,255,.04)}
+.drop .big{font-family:var(--font-d);font-weight:600;font-size:15px}
+.drop .sm{font-family:var(--font-m);font-size:11.5px;color:var(--faint);margin-top:5px}
+.samples{display:flex;flex-wrap:wrap;gap:9px;margin-top:14px}
+.chip{font-family:var(--font-m);font-size:12px;color:var(--dim);border:1px solid var(--line-soft);border-radius:99px;
+  padding:8px 14px;background:rgba(8,31,56,.5);cursor:pointer;transition:border-color .2s,color .2s}
+.chip:hover{border-color:rgba(63,224,255,.4);color:var(--ink)}
+.chip b{font-weight:500}.chip.b b{color:var(--amber)}.chip.n b{color:var(--aqua)}
+.sel{margin-top:14px;font-family:var(--font-m);font-size:12px;color:var(--dim);display:none}
+.sel.show{display:block}
+.sel .name{color:var(--cyan)}
+canvas{display:block;width:100%;margin-top:12px;border:1px solid var(--line-soft);border-radius:var(--r-sm);background:rgba(3,16,30,.5)}
+details.adv{margin-top:14px}
+details.adv summary{font-family:var(--font-m);font-size:12px;color:var(--faint);cursor:pointer;list-style:none}
+details.adv summary::-webkit-details-marker{display:none}
+details.adv summary::before{content:"▸ ";color:var(--cyan)}
+details.adv[open] summary::before{content:"▾ "}
+details.adv .body{padding:12px 2px 0}
+.file-lbl{font-family:var(--font-m);font-size:12px;color:var(--dim)}
+input[type=file]{font-family:var(--font-m);font-size:12px;color:var(--dim);margin-top:6px}
+
+/* detect + result */
+.detect-row{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin:4px 0 22px}
+.detect-row .btn-primary{font-size:16px;padding:14px 30px}
+.loading{display:none;align-items:center;gap:11px;font-family:var(--font-m);font-size:13px;color:var(--dim)}
+.loading.show{display:flex}
+.spin{width:16px;height:16px;border-radius:50%;border:2px solid rgba(143,196,238,.25);border-top-color:var(--cyan);animation:spin .8s linear infinite;flex:0 0 auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.result{display:none}
+.result.show{display:block;animation:fade .4s ease}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.verdict-box{text-align:center;padding:10px 0 6px}
+.verdict-pct{font-family:var(--font-d);font-weight:700;font-size:clamp(48px,11vw,72px);line-height:1;letter-spacing:-.02em;
+  background:linear-gradient(92deg,#FFB23E,#FF7B54);-webkit-background-clip:text;background-clip:text;color:transparent}
+.verdict-pct.normal{background:linear-gradient(92deg,#52FFC9,#3FE0FF);-webkit-background-clip:text;background-clip:text;color:transparent}
+.verdict-label{font-family:var(--font-d);font-weight:600;font-size:15px;letter-spacing:.2em;color:var(--amber);margin-top:10px}
+.verdict-label.normal{color:var(--aqua)}
+.verdict-sub{font-family:var(--font-m);font-size:12px;color:var(--faint);margin-top:8px}
+.models{display:grid;gap:9px;margin-top:22px}
+.m{display:grid;grid-template-columns:64px 1fr 52px;align-items:center;gap:11px;font-family:var(--font-m);font-size:12.5px;color:var(--dim)}
+.m .bar{height:7px;border-radius:99px;background:rgba(143,196,238,.12);overflow:hidden}
+.m .bar i{display:block;height:100%;border-radius:99px;width:0;transition:width .7s cubic-bezier(.22,1,.36,1);background:linear-gradient(92deg,#FFB23E,#FF7B54)}
+.models.normal .m .bar i{background:var(--grad-sig)}
+.m .v{text-align:right;color:var(--ink)}
+.meta{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:20px;padding-top:16px;border-top:1px solid var(--line-soft);font-family:var(--font-m);font-size:11.5px;color:var(--faint)}
+.meta b{color:var(--dim);font-weight:500}
+.agree{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:99px;border:1px solid;font-size:11px;letter-spacing:.04em}
+.agree.yes{color:var(--aqua);border-color:rgba(82,255,201,.4);background:rgba(82,255,201,.07)}
+.agree.no{color:var(--amber);border-color:rgba(255,178,62,.45);background:rgba(255,178,62,.08)}
+.errbox{display:none;margin-top:8px;border:1px solid rgba(255,107,107,.4);background:rgba(255,107,107,.07);border-radius:var(--r-sm);
+  padding:13px 15px;font-family:var(--font-m);font-size:12.5px;color:#FFC9C9;line-height:1.55}
+.errbox.show{display:block}
+.errbox a{color:#FFC9C9;text-decoration:underline}
+footer{padding:30px 0 50px;text-align:center;font-family:var(--font-m);font-size:11.5px;color:var(--faint)}
+.rawtgl{margin-top:14px;font-family:var(--font-m);font-size:11.5px;color:var(--faint);cursor:pointer}
+pre.raw{display:none;margin-top:8px;max-height:240px;overflow:auto;font-family:var(--font-m);font-size:11px;color:var(--dim);
+  background:rgba(3,16,30,.6);border:1px solid var(--line-soft);border-radius:var(--r-sm);padding:12px}
+pre.raw.show{display:block}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-in">
+    <a class="brand" href="../">
+      <svg width="24" height="24" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#0B2745"/><path d="M4 19h6l3-10 4 16 3-9 2 3h6" fill="none" stroke="#3FE0FF" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      HydraDetect-AI
+    </a>
+    <a class="back" href="../">← overview</a>
+  </div>
+</nav>
+
+<header class="wrap">
+  <span class="eyebrow">Live detector · RF + SVM ensemble</span>
+  <h1>Run the model on a <b>pressure trace</b>.</h1>
+  <p class="lede">Upload a 30-second pressure CSV — or pick a lab sample — and the <strong>same model the Little Brother device runs</strong> returns a <strong>bypass</strong> or <strong>normal</strong> verdict. The maths happens in a Python backend; this page just shows the result.</p>
+</header>
+
+<main class="wrap">
+
+  <!-- STEP 1 — backend -->
+  <section class="card">
+    <div class="step-h"><span class="step-n">1</span><span class="step-t">Connect the backend</span></div>
+    <p class="hint" style="margin-bottom:13px">Paste the URL of your deployed FastAPI service (Render / Hugging Face Spaces). It's saved in your browser for next time.</p>
+    <div class="api-row">
+      <input type="text" id="apiUrl" placeholder="https://your-service.onrender.com" autocomplete="off" spellcheck="false">
+      <button class="btn btn-ghost" id="pingBtn" type="button">Check</button>
+    </div>
+    <div class="api-status" id="apiStatus"><span class="dot"></span><span id="apiStatusTxt">Not checked yet</span></div>
+  </section>
+
+  <!-- STEP 2 — data -->
+  <section class="card">
+    <div class="step-h"><span class="step-n">2</span><span class="step-t">Choose a pressure trace</span></div>
+    <div class="drop" id="drop" role="button" tabindex="0">
+      <div class="big">Drop a CSV here, or click to browse</div>
+      <div class="sm">two columns — time, pressure · ~30 s window</div>
+      <input type="file" id="fileInput" accept=".csv,text/csv" hidden>
+    </div>
+    <div class="samples">
+      <span class="hint" style="align-self:center">or try a lab sample:</span>
+      <button class="chip b" data-sample="samples/sample_bypass.csv" type="button">🟠 <b>bypass</b></button>
+      <button class="chip b" data-sample="samples/sample_bypass2.csv" type="button">🟠 <b>bypass · 2</b></button>
+      <button class="chip n" data-sample="samples/sample_normal.csv" type="button">🟢 <b>normal</b></button>
+    </div>
+    <div class="sel" id="sel">Selected: <span class="name" id="selName">—</span> <span id="selMeta"></span></div>
+    <canvas id="plot" height="150" hidden></canvas>
+
+    <details class="adv">
+      <summary>Advanced — use your own model</summary>
+      <div class="body">
+        <p class="hint" style="margin-bottom:8px">By default the bundled <span class="mono">soldado_goku.joblib</span> (RF + SVM) is used. Upload a HydroAnalyzer <span class="mono">.joblib</span> to run yours instead.</p>
+        <label class="file-lbl">Model (.joblib, optional):</label><br>
+        <input type="file" id="modelInput" accept=".joblib,.pkl">
+      </div>
+    </details>
+  </section>
+
+  <!-- STEP 3 — detect -->
+  <section class="card">
+    <div class="step-h"><span class="step-n">3</span><span class="step-t">Detect</span></div>
+    <div class="detect-row">
+      <button class="btn btn-primary" id="detectBtn" type="button" disabled>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+        Detect bypass
+      </button>
+      <div class="loading" id="loading"><span class="spin"></span><span id="loadingTxt">Analyzing…</span></div>
+    </div>
+
+    <div class="errbox" id="errbox"></div>
+
+    <div class="result" id="result">
+      <div class="verdict-box">
+        <div class="verdict-pct" id="vPct">—</div>
+        <div class="verdict-label" id="vLabel">—</div>
+        <div class="verdict-sub" id="vSub"></div>
+      </div>
+      <div class="models" id="vModels"></div>
+      <div class="meta" id="vMeta"></div>
+      <div class="rawtgl" id="rawTgl">▸ raw JSON response</div>
+      <pre class="raw" id="rawPre"></pre>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  HydraDetect-AI · UPC Mechatronics, Lima — <a href="../">project overview</a> · cyan = signal · amber = bypass
+</footer>
+
+<script>
+(function(){
+  "use strict";
+  const $ = s => document.querySelector(s);
+  const apiInput = $("#apiUrl"), pingBtn = $("#pingBtn"), apiStatus = $("#apiStatus"), apiStatusTxt = $("#apiStatusTxt");
+  const drop = $("#drop"), fileInput = $("#fileInput"), modelInput = $("#modelInput");
+  const sel = $("#sel"), selName = $("#selName"), selMeta = $("#selMeta"), plot = $("#plot");
+  const detectBtn = $("#detectBtn"), loading = $("#loading"), loadingTxt = $("#loadingTxt");
+  const result = $("#result"), errbox = $("#errbox");
+  const vPct = $("#vPct"), vLabel = $("#vLabel"), vSub = $("#vSub"), vModels = $("#vModels"), vMeta = $("#vMeta");
+  const rawTgl = $("#rawTgl"), rawPre = $("#rawPre");
+
+  // Optional: hardcode a default once deployed, e.g. "https://hydradetect-ai.onrender.com"
+  const DEFAULT_API = "";
+  const LS_KEY = "hydradetect_api_url";
+
+  let csvFile = null;      // File or Blob with a .name
+  let modelFile = null;
+
+  /* ---------- API base ---------- */
+  function apiBase(){ return (apiInput.value || "").trim().replace(/\/+$/, ""); }
+  function loadApi(){
+    const saved = localStorage.getItem(LS_KEY);
+    apiInput.value = saved || DEFAULT_API || "";
+  }
+  apiInput.addEventListener("change", () => { localStorage.setItem(LS_KEY, apiBase()); });
+
+  function setStatus(cls, txt){ apiStatus.className = "api-status " + cls; apiStatusTxt.textContent = txt; }
+
+  async function ping(){
+    const base = apiBase();
+    if (!base){ setStatus("bad", "Enter a backend URL first."); return false; }
+    localStorage.setItem(LS_KEY, base);
+    setStatus("wait", "Pinging… (first call can take ~30 s if the server was asleep)");
+    try{
+      const ctrl = new AbortController();
+      const to = setTimeout(() => ctrl.abort(), 70000);
+      const r = await fetch(base + "/api/ping", {signal: ctrl.signal});
+      clearTimeout(to);
+      if (!r.ok){ setStatus("bad", "Backend responded " + r.status + "."); return false; }
+      const j = await r.json();
+      const models = (j.supported_models || []).join(" + ").toUpperCase();
+      setStatus("ok", "Online · models: " + (models || "?") + (j.default_model_available ? " · bundled model ready" : ""));
+      return true;
+    }catch(e){
+      setStatus("bad", "Can't reach the backend (network/CORS, or still waking up). Check the URL and try again.");
+      return false;
+    }
+  }
+  pingBtn.addEventListener("click", ping);
+
+  /* ---------- file selection ---------- */
+  function refreshDetect(){ detectBtn.disabled = !(csvFile && apiBase()); }
+  apiInput.addEventListener("input", refreshDetect);
+
+  function setCsv(file, labelName){
+    csvFile = file;
+    selName.textContent = labelName || file.name;
+    sel.classList.add("show");
+    errbox.classList.remove("show");
+    refreshDetect();
+    drawCsv(file);
+  }
+  drop.addEventListener("click", () => fileInput.click());
+  drop.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " "){ e.preventDefault(); fileInput.click(); } });
+  fileInput.addEventListener("change", () => { if (fileInput.files[0]) setCsv(fileInput.files[0]); });
+  ["dragover","dragenter"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("over"); }));
+  ["dragleave","drop"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("over"); }));
+  drop.addEventListener("drop", e => { const f = e.dataTransfer.files[0]; if (f) setCsv(f); });
+
+  document.querySelectorAll(".chip[data-sample]").forEach(c => c.addEventListener("click", async () => {
+    const url = c.dataset.sample;
+    try{
+      const r = await fetch(url); const blob = await r.blob();
+      const f = new File([blob], url.split("/").pop(), {type:"text/csv"});
+      setCsv(f, c.textContent.trim() + "  (" + f.name + ")");
+    }catch(e){ showError("Couldn't load the sample CSV: " + e.message); }
+  }));
+
+  modelInput.addEventListener("change", () => { modelFile = modelInput.files[0] || null; });
+
+  /* ---------- plot the pressure trace ---------- */
+  async function drawCsv(file){
+    let text;
+    try{ text = await file.text(); }catch(e){ return; }
+    const rows = text.replace(/^﻿/, "").trim().split(/\r?\n/);
+    const pts = [];
+    for (const line of rows){
+      const parts = line.split(/[,;\t]/);
+      if (parts.length < 2) continue;
+      const x = parseFloat(parts[0]), y = parseFloat(parts[1]);
+      if (Number.isFinite(x) && Number.isFinite(y)) pts.push([x,y]);
+    }
+    if (pts.length < 2){ plot.hidden = true; selMeta.textContent = ""; return; }
+    selMeta.textContent = "· " + pts.length + " samples";
+    plot.hidden = false;
+    const dpr = Math.min(window.devicePixelRatio||1, 2);
+    const cssW = plot.getBoundingClientRect().width || 700, cssH = 150;
+    plot.width = Math.round(cssW*dpr); plot.height = Math.round(cssH*dpr);
+    const ctx = plot.getContext("2d"); ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.clearRect(0,0,cssW,cssH);
+    const padL=8,padR=8,padT=12,padB=12, pw=cssW-padL-padR, ph=cssH-padT-padB;
+    let x0=pts[0][0], x1=pts[pts.length-1][0], ymin=Infinity, ymax=-Infinity;
+    for (const [,y] of pts){ if(y<ymin)ymin=y; if(y>ymax)ymax=y; }
+    if (ymax-ymin < 1e-9){ ymax+=1; ymin-=1; }
+    const X = x => padL + (x-x0)/((x1-x0)||1)*pw;
+    const Y = y => padT + (1-(y-ymin)/((ymax-ymin)||1))*ph;
+    ctx.strokeStyle="rgba(143,196,238,.10)"; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(padL,Y((ymin+ymax)/2)); ctx.lineTo(padL+pw,Y((ymin+ymax)/2)); ctx.stroke();
+    ctx.beginPath();
+    pts.forEach((p,i)=>{ const px=X(p[0]), py=Y(p[1]); i?ctx.lineTo(px,py):ctx.moveTo(px,py); });
+    ctx.strokeStyle="#3FE0FF"; ctx.lineWidth=1.8; ctx.shadowColor="rgba(63,224,255,.5)"; ctx.shadowBlur=7; ctx.stroke(); ctx.shadowBlur=0;
+  }
+
+  /* ---------- detect ---------- */
+  function showError(msg){ errbox.innerHTML = msg; errbox.classList.add("show"); result.classList.remove("show"); }
+
+  async function detect(){
+    const base = apiBase();
+    if (!base){ ping(); return; }
+    if (!csvFile){ showError("Pick a CSV or a sample first."); return; }
+    localStorage.setItem(LS_KEY, base);
+    errbox.classList.remove("show"); result.classList.remove("show");
+    detectBtn.disabled = true; loading.classList.add("show");
+    loadingTxt.textContent = "Analyzing…";
+    const slow = setTimeout(() => { loadingTxt.textContent = "Waking the server… (cold start, up to ~30 s the first time)"; }, 3500);
+
+    const fd = new FormData();
+    fd.append("csv_file", csvFile, csvFile.name || "trace.csv");
+    if (modelFile) fd.append("model_file", modelFile, modelFile.name);
+
+    try{
+      const ctrl = new AbortController();
+      const to = setTimeout(() => ctrl.abort(), 90000);
+      const r = await fetch(base + "/api/analyze", {method:"POST", body:fd, signal:ctrl.signal});
+      clearTimeout(to); clearTimeout(slow);
+      const j = await r.json();
+      if (j.status !== "success"){ showError("<b>Backend error:</b> " + (j.message || "unknown") + (j.step ? " <span class='mono'>(step: "+j.step+")</span>" : "")); return; }
+      render(j);
+    }catch(e){
+      clearTimeout(slow);
+      showError("<b>Couldn't reach the backend.</b><br>This is usually a wrong URL, a CORS block, or the free server still waking up. Open <span class='mono'>"+base+"/api/ping</span> in a tab to check, then retry.");
+    }finally{
+      loading.classList.remove("show"); detectBtn.disabled = false;
+    }
+  }
+  detectBtn.addEventListener("click", detect);
+
+  /* ---------- render result ---------- */
+  const ICON = {rf:"🌲 RF", svm:"🔷 SVM", xgb:"🚀 XGB", lgbm:"⚡ LGBM"};
+  function render(j){
+    const bypass = j.label === "BYPASS";
+    vPct.textContent = j.confidence.toFixed(1) + " %";
+    vPct.className = "verdict-pct" + (bypass ? "" : " normal");
+    vLabel.textContent = bypass ? "BYPASS DETECTED" : "NO BYPASS";
+    vLabel.className = "verdict-label" + (bypass ? "" : " normal");
+    vSub.textContent = "P(bypass) = " + j.prob_bypass.toFixed(1) + " %  ·  voting ensemble · " + j.n_models + " model" + (j.n_models>1?"s":"");
+
+    vModels.className = "models" + (bypass ? "" : " normal");
+    vModels.innerHTML = "";
+    Object.keys(j.models).forEach(k => {
+      const m = j.models[k];
+      const row = document.createElement("div"); row.className = "m";
+      row.innerHTML = "<span>"+(ICON[k]||k.toUpperCase())+"</span><span class='bar'><i></i></span><span class='v'>"+m.confidence.toFixed(1)+"</span>";
+      vModels.appendChild(row);
+      const fill = row.querySelector("i");
+      setTimeout(() => { fill.style.width = Math.max(2, m.confidence) + "%"; }, 60);
+    });
+
+    const agree = j.agreement;
+    const agreeHtml = agree === null ? "" :
+      "<span class='agree "+(agree?"yes":"no")+"'>"+(agree?"✓ models agree":"⚠ models disagree")+"</span>";
+    vMeta.innerHTML =
+      agreeHtml +
+      "<span><b>fs</b> "+j.fs_hz+" Hz</span>" +
+      "<span><b>samples</b> "+j.n_samples+"</span>" +
+      "<span><b>model</b> "+(j.used_default_model?"bundled RF+SVM":"your upload")+"</span>";
+
+    rawPre.textContent = JSON.stringify(j, null, 2);
+    result.classList.add("show");
+    result.scrollIntoView({behavior:"smooth", block:"nearest"});
+  }
+  rawTgl.addEventListener("click", () => {
+    const on = rawPre.classList.toggle("show");
+    rawTgl.textContent = (on ? "▾" : "▸") + " raw JSON response";
+  });
+
+  /* ---------- init ---------- */
+  loadApi(); refreshDetect();
+  if (apiBase()) ping();
+})();
+</script>
+</body>
+</html>

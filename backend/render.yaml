@@ -1,0 +1,13 @@
+# Render Blueprint — deploys this backend/ folder from the same repo.
+# In Render: New + → Blueprint → pick the HydraDetect-AI repo → Apply.
+services:
+  - type: web
+    name: hydradetect-ai
+    runtime: python
+    rootDir: backend
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: ALLOWED_ORIGINS
+        value: https://andyrcc.github.io
