@@ -343,94 +343,6 @@ pre.raw.show{display:block}
   let LANG = "en";
   const L = () => T[LANG];
 
-  /* ===== default cleanup filters — faithful JS port of HydroAnalyzer (UNIFIEDVX.py).
-     order: neighbor-difference → Hampel → IQR envelope, with the program's default params.
-     Verified element-for-element against the Python reference. ===== */
-  function _median(a){
-    const s = Float64Array.from(a).sort(); const n = s.length;
-    if (n === 0) return NaN;
-    const mid = (n - 1) / 2, lo = Math.floor(mid), hi = Math.ceil(mid);
-    return (s[lo] + s[hi]) / 2;
-  }
-  function _quantile(a, q){
-    const s = Float64Array.from(a).sort(); const n = s.length;
-    if (n === 0) return NaN;
-    const pos = (n - 1) * q, lo = Math.floor(pos), hi = Math.ceil(pos);
-    return lo === hi ? s[lo] : s[lo] + (s[hi] - s[lo]) * (pos - lo);
-  }
-  function _rolling(x, w, fn){            // pandas rolling(w, center=True, min_periods=1)
-    const n = x.length, h = (w - 1) >> 1, out = new Float64Array(n);
-    for (let i = 0; i < n; i++){ const lo = Math.max(0, i - h), hi = Math.min(n - 1, i + h); out[i] = fn(x.subarray(lo, hi + 1)); }
-    return out;
-  }
-  function fNeighbor(x, thr, ratio, maxPasses){
-    const n = x.length; let out = Float64Array.from(x);
-    if (n < 3) return out;
-    const diffs = new Float64Array(n - 1);
-    for (let i = 0; i < n - 1; i++) diffs[i] = out[i + 1] - out[i];
-    const medDiff = _median(diffs); const absdev = new Float64Array(n - 1);
-    for (let i = 0; i < n - 1; i++) absdev[i] = Math.abs(diffs[i] - medDiff);
-    const thrEff = thr * Math.max(_median(absdev) * 1.4826, 1e-9);
-    for (let pass = 0; pass < Math.max(1, maxPasses); pass++){
-      const spike = new Uint8Array(n); let any = false;
-      for (let i = 1; i < n - 1; i++){
-        const dC = Math.abs(out[i] - 0.5 * (out[i - 1] + out[i + 1])), dN = Math.abs(out[i + 1] - out[i - 1]);
-        if (dC > thrEff && dN < dC * ratio){ spike[i] = 1; any = true; }
-      }
-      if (!any) break;
-      const next = Float64Array.from(out);
-      for (let i = 1; i < n - 1; i++) if (spike[i]) next[i] = 0.5 * (out[i - 1] + out[i + 1]);
-      out = next;
-    }
-    return out;
-  }
-  function fHampel(x, w, nSig){
-    const n = x.length; let out = Float64Array.from(x);
-    if (n < 3) return out; if (w % 2 === 0) w += 1;
-    const med = _rolling(x, w, _median), diff = new Float64Array(n);
-    for (let i = 0; i < n; i++) diff[i] = Math.abs(x[i] - med[i]);
-    const mad = _rolling(diff, w, _median);
-    for (let i = 0; i < n; i++){ if (diff[i] > nSig * 1.4826 * mad[i] && mad[i] > 0) out[i] = med[i]; }
-    return out;
-  }
-  function fIqr(x, w, k, maxPasses, upPct, loPct, protect, protectW){
-    const n = x.length; let out = Float64Array.from(x);
-    if (n < 5) return out; if (w % 2 === 0) w += 1; if (protectW % 2 === 0) protectW += 1;
-    const protectMask = new Uint8Array(n);
-    if (protect){
-      const wideMed = _rolling(x, protectW, _median), wideDiff = new Float64Array(n); wideDiff[0] = NaN;
-      for (let i = 1; i < n; i++) wideDiff[i] = Math.abs(wideMed[i] - wideMed[i - 1]);
-      const valid = []; for (let i = 1; i < n; i++) if (Number.isFinite(wideDiff[i])) valid.push(wideDiff[i]);
-      const thresh = valid.length > 0 ? _quantile(valid, 0.95) : 0.0;
-      const transient = new Uint8Array(n);
-      for (let i = 0; i < n; i++) if (Number.isFinite(wideDiff[i]) && wideDiff[i] > thresh && thresh > 1e-9) transient[i] = 1;
-      const pad = Math.max(w, 21), hh = (pad - 1) >> 1;
-      for (let i = 0; i < n; i++){
-        let any = false; const lo = Math.max(0, i - hh), hi = Math.min(n - 1, i + hh);
-        for (let j = lo; j <= hi; j++) if (transient[j]){ any = true; break; }
-        protectMask[i] = any ? 1 : 0;
-      }
-    }
-    for (let pass = 0; pass < Math.max(1, maxPasses); pass++){
-      const q3 = _rolling(out, w, a => _quantile(a, upPct / 100));
-      const q1 = _rolling(out, w, a => _quantile(a, loPct / 100));
-      const med = _rolling(out, w, _median);
-      const next = Float64Array.from(out); let any = false;
-      for (let i = 0; i < n; i++){
-        const iqr = q3[i] - q1[i];
-        if (((out[i] > q3[i] + k * iqr) || (out[i] < q1[i] - k * iqr)) && iqr > 1e-9 && !protectMask[i]){ next[i] = med[i]; any = true; }
-      }
-      if (!any) break; out = next;
-    }
-    return out;
-  }
-  function applyDefaultFilter(p){
-    let o = fNeighbor(p, 4.0, 0.5, 2);
-    o = fHampel(o, 7, 3.0);
-    o = fIqr(o, 31, 3.0, 3, 75.0, 25.0, true, 201);
-    return o;
-  }
-
   /* ================= elements ================= */
   const statusEl = $("#status"), statusTxt = $("#statusTxt");
   const drop = $("#drop"), fileInput = $("#fileInput"), modelInput = $("#modelInput");
@@ -442,7 +354,7 @@ pre.raw.show{display:block}
   const filterChk = $("#filterChk"), filterInfo = $("#filterInfo");
 
   let csvFile = null, modelFile = null;
-  let sigT = null, sigP = null, sigFiltered = null;   // parsed signal + cached filtered copy
+  let sigT = null, sigP = null;   // parsed signal (for the plot only)
   let selKind = null, selDesc = "", selCount = 0;   // selection state (for re-labelling on lang change)
   let statusState = "wait";
   let lastResult = null;
@@ -511,28 +423,20 @@ pre.raw.show{display:block}
       const x = parseFloat(parts[0]), y = parseFloat(parts[1]);
       if (Number.isFinite(x) && Number.isFinite(y)){ tt.push(x); pp.push(y); }
     }
-    if (pp.length < 2){ sigT = sigP = sigFiltered = null; plot.hidden = true; selCount = 0; renderSelected(); renderFilterInfo(); return; }
-    sigT = Float64Array.from(tt); sigP = Float64Array.from(pp); sigFiltered = null;
+    if (pp.length < 2){ sigT = sigP = null; plot.hidden = true; selCount = 0; renderSelected(); return; }
+    sigT = Float64Array.from(tt); sigP = Float64Array.from(pp);
     selCount = pp.length; renderSelected();
     renderPlot();
   }
 
-  function computeFiltered(){
-    if (!sigP) return null;
-    if (!sigFiltered) sigFiltered = applyDefaultFilter(sigP);
-    return sigFiltered;
-  }
+  /* "X points cleaned" comes back from the backend after a run (filtering is server-side) */
   function renderFilterInfo(){
-    if (filterChk.checked && sigP){
-      const f = computeFiltered(); let c = 0;
-      for (let i = 0; i < sigP.length; i++) if (Math.abs(f[i] - sigP[i]) > 1e-9) c++;
-      filterInfo.textContent = L().cleaned(c);
-    } else filterInfo.textContent = "";
+    filterInfo.textContent = (lastResult && lastResult.filter_applied)
+      ? L().cleaned(lastResult.points_cleaned) : "";
   }
   function renderPlot(){
     if (!sigP){ plot.hidden = true; return; }
     plot.hidden = false;
-    const f = filterChk.checked ? computeFiltered() : null;
     const dpr = Math.min(window.devicePixelRatio||1, 2);
     const cssW = plot.getBoundingClientRect().width || 700, cssH = 150;
     plot.width = Math.round(cssW*dpr); plot.height = Math.round(cssH*dpr);
@@ -541,27 +445,16 @@ pre.raw.show{display:block}
     const padL=8,padR=8,padT=12,padB=12, pw=cssW-padL-padR, ph=cssH-padT-padB;
     const n = sigP.length, x0 = sigT[0], x1 = sigT[n-1];
     let ymin=Infinity, ymax=-Infinity;
-    for (let i=0;i<n;i++){ const y=sigP[i]; if(y<ymin)ymin=y; if(y>ymax)ymax=y;
-      if(f){ const g=f[i]; if(g<ymin)ymin=g; if(g>ymax)ymax=g; } }
+    for (let i=0;i<n;i++){ const y=sigP[i]; if(y<ymin)ymin=y; if(y>ymax)ymax=y; }
     if (ymax-ymin < 1e-9){ ymax+=1; ymin-=1; }
     const X = x => padL + (x-x0)/((x1-x0)||1)*pw;
     const Y = y => padT + (1-(y-ymin)/((ymax-ymin)||1))*ph;
     ctx.strokeStyle="rgba(143,196,238,.10)"; ctx.lineWidth=1;
     ctx.beginPath(); ctx.moveTo(padL,Y((ymin+ymax)/2)); ctx.lineTo(padL+pw,Y((ymin+ymax)/2)); ctx.stroke();
-    function poly(arr, color, width, shadow){
-      ctx.beginPath();
-      for (let i=0;i<n;i++){ const px=X(sigT[i]), py=Y(arr[i]); i?ctx.lineTo(px,py):ctx.moveTo(px,py); }
-      ctx.strokeStyle=color; ctx.lineWidth=width; ctx.shadowColor=shadow||"transparent"; ctx.shadowBlur=shadow?7:0; ctx.stroke(); ctx.shadowBlur=0;
-    }
-    if (f){
-      poly(sigP, "rgba(143,196,238,.32)", 1.2, null);     // raw, faint
-      poly(f, "#52FFC9", 1.8, "rgba(82,255,201,.5)");     // filtered, aqua
-    } else {
-      poly(sigP, "#3FE0FF", 1.8, "rgba(63,224,255,.5)");  // raw, cyan
-    }
-    renderFilterInfo();
+    ctx.beginPath();
+    for (let i=0;i<n;i++){ const px=X(sigT[i]), py=Y(sigP[i]); i?ctx.lineTo(px,py):ctx.moveTo(px,py); }
+    ctx.strokeStyle="#3FE0FF"; ctx.lineWidth=1.8; ctx.shadowColor="rgba(63,224,255,.5)"; ctx.shadowBlur=7; ctx.stroke(); ctx.shadowBlur=0;
   }
-  filterChk.addEventListener("change", () => { renderPlot(); renderFilterInfo(); });
 
   /* ================= detect ================= */
   function showError(msg){ errbox.innerHTML = msg; errbox.classList.add("show"); result.classList.remove("show"); }
@@ -574,14 +467,8 @@ pre.raw.show{display:block}
     const slow = setTimeout(() => { loadingTxt.textContent = L().ldWaking; }, 3500);
 
     const fd = new FormData();
-    if (filterChk.checked && sigP){
-      const f = computeFiltered();
-      let s = "t,p\n";
-      for (let i = 0; i < sigT.length; i++) s += sigT[i] + "," + f[i].toFixed(6) + "\n";
-      fd.append("csv_file", new File([s], "filtered.csv", {type:"text/csv"}), "filtered.csv");
-    } else {
-      fd.append("csv_file", csvFile, csvFile.name || "trace.csv");
-    }
+    fd.append("csv_file", csvFile, csvFile.name || "trace.csv");
+    fd.append("apply_filter", filterChk.checked ? "true" : "false");
     if (modelFile) fd.append("model_file", modelFile, modelFile.name);
 
     try{
@@ -634,6 +521,7 @@ pre.raw.show{display:block}
       "<span><b>"+L().metaModel+"</b> "+(j.used_default_model?L().modelBundled:L().modelYours)+"</span>";
 
     rawPre.textContent = JSON.stringify(j, null, 2);
+    renderFilterInfo();
     result.classList.add("show");
     result.scrollIntoView({behavior:"smooth", block:"nearest"});
   }

@@ -27,7 +27,7 @@ from scipy.optimize import curve_fit
 from scipy.fft import rfft, rfftfreq
 import pywt
 
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s  %(levelname)s  %(message)s")
@@ -90,6 +90,137 @@ def extract_features(t, p, fs):
             features[f'wavelet_E_{i}'] = 0.0
 
     return features
+
+
+# =====================================================================
+# DEFAULT CLEANUP FILTERS  — verbatim from HydroAnalyzer desktop (UNIFIEDVX.py).
+# Single source of truth for the signal cleaning. The 3 active stages with the
+# program's default parameters: neighbor-difference → Hampel → IQR envelope.
+# =====================================================================
+def neighbor_diff_filter(x, threshold_sigmas=4.0, neighbor_agree_ratio=0.5, max_passes=2):
+    x = np.asarray(x, dtype=float)
+    if len(x) < 3:
+        return x.copy()
+    diffs = np.diff(x)
+    mad = np.median(np.abs(diffs - np.median(diffs)))
+    noise_std = max(float(mad) * 1.4826, 1e-9)
+    threshold_eff = threshold_sigmas * noise_std
+    out = x.copy()
+    for _ in range(max(1, int(max_passes))):
+        left, right, center = out[:-2], out[2:], out[1:-1]
+        avg = 0.5 * (left + right)
+        delta_central = np.abs(center - avg)
+        delta_neighbors = np.abs(right - left)
+        spike_inner = (delta_central > threshold_eff) & (delta_neighbors < delta_central * neighbor_agree_ratio)
+        if not spike_inner.any():
+            break
+        new_center = np.where(spike_inner, avg, center)
+        out_new = out.copy(); out_new[1:-1] = new_center; out = out_new
+    return out
+
+
+def hampel_filter(x, window_size=7, n_sigmas=3.0):
+    x = np.asarray(x, dtype=float)
+    if len(x) < 3:
+        return x.copy()
+    if window_size % 2 == 0:
+        window_size += 1
+    s = pd.Series(x)
+    rolling_med = s.rolling(window_size, center=True, min_periods=1).median()
+    diff = (s - rolling_med).abs()
+    rolling_mad = diff.rolling(window_size, center=True, min_periods=1).median()
+    threshold = n_sigmas * 1.4826 * rolling_mad
+    outlier_mask = ((diff > threshold) & (rolling_mad > 0)).to_numpy()
+    return np.where(outlier_mask, rolling_med.to_numpy(), x)
+
+
+def iqr_envelope_filter(x, window_size=31, n_sigmas=3.0, max_passes=3,
+                        upper_pct=75.0, lower_pct=25.0,
+                        protect_transients=True, protect_window=201):
+    x = np.asarray(x, dtype=float)
+    if len(x) < 5:
+        return x.copy()
+    if window_size % 2 == 0: window_size += 1
+    if protect_window % 2 == 0: protect_window += 1
+    if protect_transients:
+        s_orig = pd.Series(x)
+        wide_med = s_orig.rolling(protect_window, center=True, min_periods=1).median()
+        wide_diff = wide_med.diff().abs()
+        valid = wide_diff.dropna()
+        thresh = float(np.quantile(valid, 0.95)) if len(valid) > 0 else 0.0
+        transient = (wide_diff.to_numpy() > thresh) & (thresh > 1e-9)
+        pad = max(window_size, 21)
+        kernel = np.ones(pad, dtype=float)
+        protect_mask = np.convolve(transient.astype(float), kernel, mode='same') > 0
+    else:
+        protect_mask = np.zeros_like(x, dtype=bool)
+    out = x.copy()
+    for _ in range(max(1, int(max_passes))):
+        s = pd.Series(out)
+        q3 = s.rolling(window_size, center=True, min_periods=1).quantile(upper_pct / 100).to_numpy()
+        q1 = s.rolling(window_size, center=True, min_periods=1).quantile(lower_pct / 100).to_numpy()
+        med = s.rolling(window_size, center=True, min_periods=1).median().to_numpy()
+        iqr = q3 - q1
+        upper = q3 + n_sigmas * iqr
+        lower = q1 - n_sigmas * iqr
+        mask = ((out > upper) | (out < lower)) & (iqr > 1e-9) & (~protect_mask)
+        if not mask.any():
+            break
+        out = np.where(mask, med, out)
+    return out
+
+
+def apply_default_filter(p):
+    """HydroAnalyzer's default cleanup: the 3 active stages with default params."""
+    out = neighbor_diff_filter(p, 4.0, 0.5, 2)
+    out = hampel_filter(out, 7, 3.0)
+    out = iqr_envelope_filter(out, 31, 3.0, 3, 75.0, 25.0, True, 201)
+    return out
+
+
+def parse_signal(csv_bytes):
+    """Robust line-by-line parser (port of the desktop's load_csv_signal).
+
+    Keeps only lines that are exactly `<float><sep><float>`, so it tolerates
+    PuTTY/serial log banners, headers (time_s,pressure_bar), comments and
+    trailing junk. Separators: comma, semicolon, tab, or whitespace.
+    """
+    text = None
+    for enc in ("utf-8-sig", "utf-8", "latin-1"):
+        try:
+            text = csv_bytes.decode(enc)
+            break
+        except UnicodeDecodeError:
+            continue
+    if text is None:
+        text = csv_bytes.decode("utf-8", errors="replace")
+
+    times, pres = [], []
+    for line in text.splitlines():
+        s = line.strip()
+        if not s or s[0] == "#" or s.startswith("//"):
+            continue
+        parts = None
+        for sep in (",", ";", "\t"):
+            if sep in s:
+                parts = [x.strip() for x in s.split(sep) if x.strip() != ""]
+                break
+        if parts is None:
+            parts = s.split()
+        if len(parts) != 2:
+            continue
+        try:
+            a = float(parts[0]); b = float(parts[1])
+        except ValueError:
+            continue
+        times.append(a); pres.append(b)
+
+    t = np.asarray(times, dtype=float)
+    p = np.asarray(pres, dtype=float)
+    if len(t) >= 2 and not np.all(np.diff(t) >= 0):
+        order = np.argsort(t, kind="mergesort")
+        t, p = t[order], p[order]
+    return t, p
 
 
 # =====================================================================
@@ -168,6 +299,7 @@ async def ping_endpoint():
 async def analyze_endpoint(
     csv_file:   UploadFile = File(...),
     model_file: Optional[UploadFile] = File(None),
+    apply_filter: bool = Form(False),
 ):
     step = "start"
     try:
@@ -223,35 +355,33 @@ async def analyze_endpoint(
             keys = list(model_data.keys()) if isinstance(model_data, dict) else str(type(model_data))
             return _err(f"No model ({', '.join(MODEL_KEYS)}) found in the .joblib. Keys: {keys}", step=step)
 
-        # 5. Parse CSV
+        # 5. Parse CSV — robust line-by-line (tolerates PuTTY logs, headers, junk)
         step = "parse_csv"
         try:
-            csv_text = csv_bytes.decode('utf-8', errors='replace')
-            df = pd.read_csv(io.StringIO(csv_text))
+            t, p = parse_signal(csv_bytes)
         except Exception as e:
-            return _err(f"pandas could not read the CSV: {e}", step=step, exc=e)
-        if df.shape[1] < 2:
-            return _err(f"CSV has {df.shape[1]} column(s); needs >= 2. Columns: {list(df.columns)}", step=step)
-
-        # 6. Detect columns
-        step = "detect_columns"
-        cols_lower = [str(c).lower() for c in df.columns]
-        col_t_name = next((df.columns[i] for i, c in enumerate(cols_lower) if 't' in c or 'time' in c), df.columns[0])
-        col_p_name = next((df.columns[i] for i, c in enumerate(cols_lower) if 'p' in c or 'pres' in c or 'bar' in c), df.columns[1])
-        try:
-            t = df[col_t_name].to_numpy(dtype=float)
-            p = df[col_p_name].to_numpy(dtype=float)
-        except Exception as e:
-            return _err(f"Could not convert columns to float (t='{col_t_name}', p='{col_p_name}'): {e}", step=step, exc=e)
+            return _err(f"Could not parse the CSV: {e}", step=step, exc=e)
         if len(t) < 10:
-            return _err(f"Signal too short: {len(t)} samples (min 10).", step=step)
+            return _err(f"No valid <time>,<pressure> data found (got {len(t)} rows; need >= 10). "
+                        f"The file must contain two numeric columns.", step=step)
 
-        # 7. Sampling rate
+        # 6. Sampling rate
         step = "sampling_rate"
         diffs = np.diff(t)
         valid = diffs[diffs > 0]
         dt = float(np.median(valid)) if len(valid) > 0 else 1e-3
         fs = max(1, int(round(1.0 / dt)))
+
+        # 7. Optional default cleanup filter (same pipeline as the desktop program)
+        points_cleaned = 0
+        if apply_filter:
+            step = "filter"
+            try:
+                p_raw = p
+                p = apply_default_filter(p)
+                points_cleaned = int(np.sum(np.abs(p - p_raw) > 1e-9))
+            except Exception as e:
+                return _err(f"Filtering failed: {e}", step=step, exc=e)
 
         # 8. Features
         step = "extract_features"
@@ -339,6 +469,8 @@ async def analyze_endpoint(
             "fs_hz":          fs,
             "n_samples":      len(t),
             "used_default_model": used_default,
+            "filter_applied": bool(apply_filter),
+            "points_cleaned": points_cleaned,
         }
 
     except Exception as e:
