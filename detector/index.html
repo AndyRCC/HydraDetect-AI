@@ -118,6 +118,8 @@ details.adv summary::before{content:"▸ ";color:var(--cyan)}
 details.adv[open] summary::before{content:"▾ "}
 details.adv .body{padding:12px 2px 0}
 .file-lbl{font-family:var(--font-m);font-size:12px;color:var(--dim)}
+.optchk{display:inline-flex;align-items:center;gap:9px;cursor:pointer;font-family:var(--font-b);font-size:14px;color:var(--ink);user-select:none}
+.optchk input{width:16px;height:16px;accent-color:var(--cyan);cursor:pointer;flex:0 0 auto}
 input[type=file]{font-family:var(--font-m);font-size:12px;color:var(--dim);margin-top:6px;max-width:100%}
 
 /* detect + result */
@@ -215,6 +217,10 @@ pre.raw.show{display:block}
     <details class="adv">
       <summary data-i18n="advSummary">Advanced — use your own model</summary>
       <div class="body">
+        <label class="optchk"><input type="checkbox" id="filterChk"> <span data-i18n="filterLbl">Apply HydroAnalyzer's default filter</span></label>
+        <p class="hint" data-i18n="filterHint" style="margin:7px 0 3px">Cleans the signal exactly like the desktop app — 3 stages: neighbor anti-spike · Hampel · IQR envelope.</p>
+        <p class="hint" id="filterInfo" style="color:var(--aqua);min-height:1.1em;margin:0"></p>
+        <hr style="border:none;border-top:1px solid var(--line-soft);margin:15px 0 13px">
         <p class="hint" style="margin-bottom:8px" data-i18n="advHint">By default the bundled <span class="mono">soldado_goku.joblib</span> (RF + SVM) is used. Upload a HydroAnalyzer <span class="mono">.joblib</span> to run yours instead.</p>
         <label class="file-lbl" data-i18n="modelLbl">Model (.joblib, optional):</label><br>
         <input type="file" id="modelInput" accept=".joblib,.pkl">
@@ -276,7 +282,7 @@ pre.raw.show{display:block}
       orSample:"or try a lab sample:",
       chipBypass:"bypass", chipBypass2:"bypass · 2", chipNormal:"normal",
       selectedLbl:"Selected:",
-      advSummary:"Advanced — use your own model",
+      advSummary:"Advanced options",
       advHint:'By default the bundled <span class="mono">soldado_goku.joblib</span> (RF + SVM) is used. Upload a HydroAnalyzer <span class="mono">.joblib</span> to run yours instead.',
       modelLbl:"Model (.joblib, optional):",
       step2:"Detect",
@@ -294,7 +300,10 @@ pre.raw.show{display:block}
       errUnreachable:"<b>Couldn't reach the backend.</b><br>The free server may still be waking up (~30 s the first time) — wait a moment and try again.",
       errBackend:(msg,step)=>"<b>Backend error:</b> "+msg+(step?" <span class='mono'>(step: "+step+")</span>":""),
       errSample:m=>"Couldn't load the sample CSV: "+m,
-      raw:"raw JSON response"
+      raw:"raw JSON response",
+      filterLbl:"Apply HydroAnalyzer's default filter",
+      filterHint:"Cleans the signal exactly like the desktop app — 3 stages: neighbor anti-spike · Hampel · IQR envelope.",
+      cleaned:n=>n+" point"+(n!==1?"s":"")+" cleaned by the filter"
     },
     es: {
       docTitle:"HydraDetect-AI — Detector en vivo",
@@ -307,7 +316,7 @@ pre.raw.show{display:block}
       orSample:"o prueba una muestra de laboratorio:",
       chipBypass:"bypass", chipBypass2:"bypass · 2", chipNormal:"normal",
       selectedLbl:"Seleccionado:",
-      advSummary:"Avanzado — usa tu propio modelo",
+      advSummary:"Opciones avanzadas",
       advHint:'Por defecto se usa el modelo incluido <span class="mono">soldado_goku.joblib</span> (RF + SVM). Sube un <span class="mono">.joblib</span> de HydroAnalyzer para usar el tuyo.',
       modelLbl:"Modelo (.joblib, opcional):",
       step2:"Detectar",
@@ -325,11 +334,102 @@ pre.raw.show{display:block}
       errUnreachable:"<b>No se pudo contactar el backend.</b><br>El servidor gratuito puede estar despertando (~30 s la primera vez) — espera un momento y reintenta.",
       errBackend:(msg,step)=>"<b>Error del backend:</b> "+msg+(step?" <span class='mono'>(paso: "+step+")</span>":""),
       errSample:m=>"No se pudo cargar el CSV de muestra: "+m,
-      raw:"respuesta JSON cruda"
+      raw:"respuesta JSON cruda",
+      filterLbl:"Aplicar el filtro por defecto de HydroAnalyzer",
+      filterHint:"Limpia la señal igual que la app de escritorio — 3 etapas: anti-spike por vecinos · Hampel · envolvente IQR.",
+      cleaned:n=>n+" punto"+(n!==1?"s":"")+" limpiado"+(n!==1?"s":"")+" por el filtro"
     }
   };
   let LANG = "en";
   const L = () => T[LANG];
+
+  /* ===== default cleanup filters — faithful JS port of HydroAnalyzer (UNIFIEDVX.py).
+     order: neighbor-difference → Hampel → IQR envelope, with the program's default params.
+     Verified element-for-element against the Python reference. ===== */
+  function _median(a){
+    const s = Float64Array.from(a).sort(); const n = s.length;
+    if (n === 0) return NaN;
+    const mid = (n - 1) / 2, lo = Math.floor(mid), hi = Math.ceil(mid);
+    return (s[lo] + s[hi]) / 2;
+  }
+  function _quantile(a, q){
+    const s = Float64Array.from(a).sort(); const n = s.length;
+    if (n === 0) return NaN;
+    const pos = (n - 1) * q, lo = Math.floor(pos), hi = Math.ceil(pos);
+    return lo === hi ? s[lo] : s[lo] + (s[hi] - s[lo]) * (pos - lo);
+  }
+  function _rolling(x, w, fn){            // pandas rolling(w, center=True, min_periods=1)
+    const n = x.length, h = (w - 1) >> 1, out = new Float64Array(n);
+    for (let i = 0; i < n; i++){ const lo = Math.max(0, i - h), hi = Math.min(n - 1, i + h); out[i] = fn(x.subarray(lo, hi + 1)); }
+    return out;
+  }
+  function fNeighbor(x, thr, ratio, maxPasses){
+    const n = x.length; let out = Float64Array.from(x);
+    if (n < 3) return out;
+    const diffs = new Float64Array(n - 1);
+    for (let i = 0; i < n - 1; i++) diffs[i] = out[i + 1] - out[i];
+    const medDiff = _median(diffs); const absdev = new Float64Array(n - 1);
+    for (let i = 0; i < n - 1; i++) absdev[i] = Math.abs(diffs[i] - medDiff);
+    const thrEff = thr * Math.max(_median(absdev) * 1.4826, 1e-9);
+    for (let pass = 0; pass < Math.max(1, maxPasses); pass++){
+      const spike = new Uint8Array(n); let any = false;
+      for (let i = 1; i < n - 1; i++){
+        const dC = Math.abs(out[i] - 0.5 * (out[i - 1] + out[i + 1])), dN = Math.abs(out[i + 1] - out[i - 1]);
+        if (dC > thrEff && dN < dC * ratio){ spike[i] = 1; any = true; }
+      }
+      if (!any) break;
+      const next = Float64Array.from(out);
+      for (let i = 1; i < n - 1; i++) if (spike[i]) next[i] = 0.5 * (out[i - 1] + out[i + 1]);
+      out = next;
+    }
+    return out;
+  }
+  function fHampel(x, w, nSig){
+    const n = x.length; let out = Float64Array.from(x);
+    if (n < 3) return out; if (w % 2 === 0) w += 1;
+    const med = _rolling(x, w, _median), diff = new Float64Array(n);
+    for (let i = 0; i < n; i++) diff[i] = Math.abs(x[i] - med[i]);
+    const mad = _rolling(diff, w, _median);
+    for (let i = 0; i < n; i++){ if (diff[i] > nSig * 1.4826 * mad[i] && mad[i] > 0) out[i] = med[i]; }
+    return out;
+  }
+  function fIqr(x, w, k, maxPasses, upPct, loPct, protect, protectW){
+    const n = x.length; let out = Float64Array.from(x);
+    if (n < 5) return out; if (w % 2 === 0) w += 1; if (protectW % 2 === 0) protectW += 1;
+    const protectMask = new Uint8Array(n);
+    if (protect){
+      const wideMed = _rolling(x, protectW, _median), wideDiff = new Float64Array(n); wideDiff[0] = NaN;
+      for (let i = 1; i < n; i++) wideDiff[i] = Math.abs(wideMed[i] - wideMed[i - 1]);
+      const valid = []; for (let i = 1; i < n; i++) if (Number.isFinite(wideDiff[i])) valid.push(wideDiff[i]);
+      const thresh = valid.length > 0 ? _quantile(valid, 0.95) : 0.0;
+      const transient = new Uint8Array(n);
+      for (let i = 0; i < n; i++) if (Number.isFinite(wideDiff[i]) && wideDiff[i] > thresh && thresh > 1e-9) transient[i] = 1;
+      const pad = Math.max(w, 21), hh = (pad - 1) >> 1;
+      for (let i = 0; i < n; i++){
+        let any = false; const lo = Math.max(0, i - hh), hi = Math.min(n - 1, i + hh);
+        for (let j = lo; j <= hi; j++) if (transient[j]){ any = true; break; }
+        protectMask[i] = any ? 1 : 0;
+      }
+    }
+    for (let pass = 0; pass < Math.max(1, maxPasses); pass++){
+      const q3 = _rolling(out, w, a => _quantile(a, upPct / 100));
+      const q1 = _rolling(out, w, a => _quantile(a, loPct / 100));
+      const med = _rolling(out, w, _median);
+      const next = Float64Array.from(out); let any = false;
+      for (let i = 0; i < n; i++){
+        const iqr = q3[i] - q1[i];
+        if (((out[i] > q3[i] + k * iqr) || (out[i] < q1[i] - k * iqr)) && iqr > 1e-9 && !protectMask[i]){ next[i] = med[i]; any = true; }
+      }
+      if (!any) break; out = next;
+    }
+    return out;
+  }
+  function applyDefaultFilter(p){
+    let o = fNeighbor(p, 4.0, 0.5, 2);
+    o = fHampel(o, 7, 3.0);
+    o = fIqr(o, 31, 3.0, 3, 75.0, 25.0, true, 201);
+    return o;
+  }
 
   /* ================= elements ================= */
   const statusEl = $("#status"), statusTxt = $("#statusTxt");
@@ -339,8 +439,10 @@ pre.raw.show{display:block}
   const result = $("#result"), errbox = $("#errbox");
   const vPct = $("#vPct"), vLabel = $("#vLabel"), vSub = $("#vSub"), vModels = $("#vModels"), vMeta = $("#vMeta");
   const rawTgl = $("#rawTgl"), rawPre = $("#rawPre");
+  const filterChk = $("#filterChk"), filterInfo = $("#filterInfo");
 
   let csvFile = null, modelFile = null;
+  let sigT = null, sigP = null, sigFiltered = null;   // parsed signal + cached filtered copy
   let selKind = null, selDesc = "", selCount = 0;   // selection state (for re-labelling on lang change)
   let statusState = "wait";
   let lastResult = null;
@@ -397,38 +499,69 @@ pre.raw.show{display:block}
 
   modelInput.addEventListener("change", () => { modelFile = modelInput.files[0] || null; });
 
-  /* ================= plot ================= */
+  /* ================= parse + plot ================= */
   async function drawCsv(file){
     let text;
     try{ text = await file.text(); }catch(e){ return; }
     const rows = text.replace(/^﻿/, "").trim().split(/\r?\n/);
-    const pts = [];
+    const tt = [], pp = [];
     for (const line of rows){
       const parts = line.split(/[,;\t]/);
       if (parts.length < 2) continue;
       const x = parseFloat(parts[0]), y = parseFloat(parts[1]);
-      if (Number.isFinite(x) && Number.isFinite(y)) pts.push([x,y]);
+      if (Number.isFinite(x) && Number.isFinite(y)){ tt.push(x); pp.push(y); }
     }
-    if (pts.length < 2){ plot.hidden = true; selCount = 0; renderSelected(); return; }
-    selCount = pts.length; renderSelected();
+    if (pp.length < 2){ sigT = sigP = sigFiltered = null; plot.hidden = true; selCount = 0; renderSelected(); renderFilterInfo(); return; }
+    sigT = Float64Array.from(tt); sigP = Float64Array.from(pp); sigFiltered = null;
+    selCount = pp.length; renderSelected();
+    renderPlot();
+  }
+
+  function computeFiltered(){
+    if (!sigP) return null;
+    if (!sigFiltered) sigFiltered = applyDefaultFilter(sigP);
+    return sigFiltered;
+  }
+  function renderFilterInfo(){
+    if (filterChk.checked && sigP){
+      const f = computeFiltered(); let c = 0;
+      for (let i = 0; i < sigP.length; i++) if (Math.abs(f[i] - sigP[i]) > 1e-9) c++;
+      filterInfo.textContent = L().cleaned(c);
+    } else filterInfo.textContent = "";
+  }
+  function renderPlot(){
+    if (!sigP){ plot.hidden = true; return; }
     plot.hidden = false;
+    const f = filterChk.checked ? computeFiltered() : null;
     const dpr = Math.min(window.devicePixelRatio||1, 2);
     const cssW = plot.getBoundingClientRect().width || 700, cssH = 150;
     plot.width = Math.round(cssW*dpr); plot.height = Math.round(cssH*dpr);
     const ctx = plot.getContext("2d"); ctx.setTransform(dpr,0,0,dpr,0,0);
     ctx.clearRect(0,0,cssW,cssH);
     const padL=8,padR=8,padT=12,padB=12, pw=cssW-padL-padR, ph=cssH-padT-padB;
-    let x0=pts[0][0], x1=pts[pts.length-1][0], ymin=Infinity, ymax=-Infinity;
-    for (const pt of pts){ const y=pt[1]; if(y<ymin)ymin=y; if(y>ymax)ymax=y; }
+    const n = sigP.length, x0 = sigT[0], x1 = sigT[n-1];
+    let ymin=Infinity, ymax=-Infinity;
+    for (let i=0;i<n;i++){ const y=sigP[i]; if(y<ymin)ymin=y; if(y>ymax)ymax=y;
+      if(f){ const g=f[i]; if(g<ymin)ymin=g; if(g>ymax)ymax=g; } }
     if (ymax-ymin < 1e-9){ ymax+=1; ymin-=1; }
     const X = x => padL + (x-x0)/((x1-x0)||1)*pw;
     const Y = y => padT + (1-(y-ymin)/((ymax-ymin)||1))*ph;
     ctx.strokeStyle="rgba(143,196,238,.10)"; ctx.lineWidth=1;
     ctx.beginPath(); ctx.moveTo(padL,Y((ymin+ymax)/2)); ctx.lineTo(padL+pw,Y((ymin+ymax)/2)); ctx.stroke();
-    ctx.beginPath();
-    pts.forEach((p,i)=>{ const px=X(p[0]), py=Y(p[1]); i?ctx.lineTo(px,py):ctx.moveTo(px,py); });
-    ctx.strokeStyle="#3FE0FF"; ctx.lineWidth=1.8; ctx.shadowColor="rgba(63,224,255,.5)"; ctx.shadowBlur=7; ctx.stroke(); ctx.shadowBlur=0;
+    function poly(arr, color, width, shadow){
+      ctx.beginPath();
+      for (let i=0;i<n;i++){ const px=X(sigT[i]), py=Y(arr[i]); i?ctx.lineTo(px,py):ctx.moveTo(px,py); }
+      ctx.strokeStyle=color; ctx.lineWidth=width; ctx.shadowColor=shadow||"transparent"; ctx.shadowBlur=shadow?7:0; ctx.stroke(); ctx.shadowBlur=0;
+    }
+    if (f){
+      poly(sigP, "rgba(143,196,238,.32)", 1.2, null);     // raw, faint
+      poly(f, "#52FFC9", 1.8, "rgba(82,255,201,.5)");     // filtered, aqua
+    } else {
+      poly(sigP, "#3FE0FF", 1.8, "rgba(63,224,255,.5)");  // raw, cyan
+    }
+    renderFilterInfo();
   }
+  filterChk.addEventListener("change", () => { renderPlot(); renderFilterInfo(); });
 
   /* ================= detect ================= */
   function showError(msg){ errbox.innerHTML = msg; errbox.classList.add("show"); result.classList.remove("show"); }
@@ -441,7 +574,14 @@ pre.raw.show{display:block}
     const slow = setTimeout(() => { loadingTxt.textContent = L().ldWaking; }, 3500);
 
     const fd = new FormData();
-    fd.append("csv_file", csvFile, csvFile.name || "trace.csv");
+    if (filterChk.checked && sigP){
+      const f = computeFiltered();
+      let s = "t,p\n";
+      for (let i = 0; i < sigT.length; i++) s += sigT[i] + "," + f[i].toFixed(6) + "\n";
+      fd.append("csv_file", new File([s], "filtered.csv", {type:"text/csv"}), "filtered.csv");
+    } else {
+      fd.append("csv_file", csvFile, csvFile.name || "trace.csv");
+    }
     if (modelFile) fd.append("model_file", modelFile, modelFile.name);
 
     try{
@@ -516,7 +656,7 @@ pre.raw.show{display:block}
     langCur.textContent = lang.toUpperCase();
     langOpts.forEach(o => { const on = o.dataset.lang === lang; o.classList.toggle("on", on); o.setAttribute("aria-selected", on); });
     try{ localStorage.setItem(LANG_KEY, lang); }catch(e){}
-    renderStatus(); renderSelected(); renderRaw();
+    renderStatus(); renderSelected(); renderRaw(); renderFilterInfo();
     if (loading.classList.contains("show")) loadingTxt.textContent = L().ldAnalyzing;
     if (lastResult) render(lastResult);
   }
