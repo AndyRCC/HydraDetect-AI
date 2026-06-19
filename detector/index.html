@@ -120,6 +120,15 @@ details.adv .body{padding:12px 2px 0}
 .file-lbl{font-family:var(--font-m);font-size:12px;color:var(--dim)}
 .optchk{display:inline-flex;align-items:center;gap:9px;cursor:pointer;font-family:var(--font-b);font-size:14px;color:var(--ink);user-select:none}
 .optchk input{width:16px;height:16px;accent-color:var(--cyan);cursor:pointer;flex:0 0 auto}
+.model-sel{width:100%;font-family:var(--font-b);font-size:14.5px;color:var(--ink);cursor:pointer;
+  background:rgba(3,16,30,.6);border:1px solid var(--line);border-radius:var(--r-sm);padding:12px 38px 12px 14px;
+  appearance:none;-webkit-appearance:none;
+  background-image:url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%233FE0FF" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>');
+  background-repeat:no-repeat;background-position:right 13px center;background-size:14px}
+.model-sel:hover{border-color:rgba(143,196,238,.34)}
+.model-sel:focus{outline:none;border-color:rgba(63,224,255,.5)}
+.model-sel option{background:#0B2745;color:var(--ink)}
+.model-own{margin-top:16px}
 input[type=file]{font-family:var(--font-m);font-size:12px;color:var(--dim);margin-top:6px;max-width:100%}
 
 /* detect + result */
@@ -215,22 +224,34 @@ pre.raw.show{display:block}
     <canvas id="plot" height="150" hidden></canvas>
 
     <details class="adv">
-      <summary data-i18n="advSummary">Advanced — use your own model</summary>
+      <summary data-i18n="advSummary">Advanced options</summary>
       <div class="body">
         <label class="optchk"><input type="checkbox" id="filterChk"> <span data-i18n="filterLbl">Apply HydroAnalyzer's default filter</span></label>
         <p class="hint" data-i18n="filterHint" style="margin:7px 0 3px">Cleans the signal exactly like the desktop app — 3 stages: neighbor anti-spike · Hampel · IQR envelope.</p>
         <p class="hint" id="filterInfo" style="color:var(--aqua);min-height:1.1em;margin:0"></p>
-        <hr style="border:none;border-top:1px solid var(--line-soft);margin:15px 0 13px">
-        <p class="hint" style="margin-bottom:8px" data-i18n="advHint">By default the bundled <span class="mono">soldado_goku.joblib</span> (RF + SVM) is used. Upload a HydroAnalyzer <span class="mono">.joblib</span> to run yours instead.</p>
-        <label class="file-lbl" data-i18n="modelLbl">Model (.joblib, optional):</label><br>
-        <input type="file" id="modelInput" accept=".joblib,.pkl">
       </div>
     </details>
   </section>
 
-  <!-- STEP 2 — detect -->
+  <!-- STEP 2 — model -->
   <section class="card">
-    <div class="step-h"><span class="step-n">2</span><span class="step-t" data-i18n="step2">Detect</span></div>
+    <div class="step-h"><span class="step-n">2</span><span class="step-t" data-i18n="step2">Choose a model</span></div>
+    <p class="hint" data-i18n="modelHint" style="margin-bottom:12px">Each model is tuned for a different initial-pressure range.</p>
+    <select id="modelSel" class="model-sel" aria-label="Model">
+      <option value="" data-i18n="mGoku">Gokú — general (default)</option>
+      <option value="Freezer(mejorado).joblib" data-i18n="mFreezer">Freezer — 0–0.5 bar</option>
+      <option value="cell(mejorado).joblib" data-i18n="mCell">Cell — 0.5–1 bar</option>
+      <option value="buu-1-1.5.joblib" data-i18n="mBuu">Buu — 1–1.5 bar</option>
+    </select>
+    <div class="model-own">
+      <label class="file-lbl" data-i18n="modelOwnLbl">…or upload your own .joblib:</label><br>
+      <input type="file" id="modelInput" accept=".joblib,.pkl">
+    </div>
+  </section>
+
+  <!-- STEP 3 — detect -->
+  <section class="card">
+    <div class="step-h"><span class="step-n">3</span><span class="step-t" data-i18n="step3">Detect</span></div>
     <div class="detect-row">
       <button class="btn btn-primary" id="detectBtn" type="button" disabled>
         <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
@@ -285,11 +306,14 @@ pre.raw.show{display:block}
       advSummary:"Advanced options",
       advHint:'By default the bundled <span class="mono">soldado_goku.joblib</span> (RF + SVM) is used. Upload a HydroAnalyzer <span class="mono">.joblib</span> to run yours instead.',
       modelLbl:"Model (.joblib, optional):",
-      step2:"Detect",
+      step2:"Choose a model", step3:"Detect",
+      modelHint:"Each model is tuned for a different initial-pressure range.",
+      mGoku:"Gokú — general (default)", mFreezer:"Freezer — 0–0.5 bar", mCell:"Cell — 0.5–1 bar", mBuu:"Buu — 1–1.5 bar",
+      modelOwnLbl:"…or upload your own .joblib:",
       detectBtn:"Detect bypass",
       footer:'HydraDetect-AI · UPC Mechatronics, Lima — <a href="../">project overview</a> · cyan = signal · amber = bypass',
       stConnecting:"connecting…", stOnline:"online", stOffline:"offline · retry",
-      ldAnalyzing:"Analyzing…", ldWaking:"Waking the server… (cold start, up to ~30 s the first time)",
+      ldAnalyzing:"Analyzing…", ldModel:"Loading model…", ldWaking:"Waking the server… (cold start, up to ~30 s the first time)",
       vBypass:"BYPASS DETECTED", vNormal:"NO BYPASS",
       vSub:(pbp,n)=>"P(bypass) = "+pbp+" %  ·  voting ensemble · "+n+" model"+(n>1?"s":""),
       agreeYes:"✓ models agree", agreeNo:"⚠ models disagree",
@@ -319,11 +343,14 @@ pre.raw.show{display:block}
       advSummary:"Opciones avanzadas",
       advHint:'Por defecto se usa el modelo incluido <span class="mono">soldado_goku.joblib</span> (RF + SVM). Sube un <span class="mono">.joblib</span> de HydroAnalyzer para usar el tuyo.',
       modelLbl:"Modelo (.joblib, opcional):",
-      step2:"Detectar",
+      step2:"Elige un modelo", step3:"Detectar",
+      modelHint:"Cada modelo está afinado para un rango de presión inicial distinto.",
+      mGoku:"Gokú — general (por defecto)", mFreezer:"Freezer — 0–0.5 bar", mCell:"Cell — 0.5–1 bar", mBuu:"Buu — 1–1.5 bar",
+      modelOwnLbl:"…o sube tu propio .joblib:",
       detectBtn:"Detectar bypass",
       footer:'HydraDetect-AI · UPC Mecatrónica, Lima — <a href="../">descripción del proyecto</a> · cian = señal · ámbar = bypass',
       stConnecting:"conectando…", stOnline:"en línea", stOffline:"sin conexión · reintentar",
-      ldAnalyzing:"Analizando…", ldWaking:"Despertando el servidor… (arranque en frío, hasta ~30 s la primera vez)",
+      ldAnalyzing:"Analizando…", ldModel:"Cargando modelo…", ldWaking:"Despertando el servidor… (arranque en frío, hasta ~30 s la primera vez)",
       vBypass:"BYPASS DETECTADO", vNormal:"SIN BYPASS",
       vSub:(pbp,n)=>"P(bypass) = "+pbp+" %  ·  ensemble por votación · "+n+" modelo"+(n>1?"s":""),
       agreeYes:"✓ los modelos coinciden", agreeNo:"⚠ los modelos discrepan",
@@ -345,7 +372,7 @@ pre.raw.show{display:block}
 
   /* ================= elements ================= */
   const statusEl = $("#status"), statusTxt = $("#statusTxt");
-  const drop = $("#drop"), fileInput = $("#fileInput"), modelInput = $("#modelInput");
+  const drop = $("#drop"), fileInput = $("#fileInput"), modelInput = $("#modelInput"), modelSel = $("#modelSel");
   const sel = $("#sel"), selName = $("#selName"), selMeta = $("#selMeta"), plot = $("#plot");
   const detectBtn = $("#detectBtn"), loading = $("#loading"), loadingTxt = $("#loadingTxt");
   const result = $("#result"), errbox = $("#errbox");
@@ -353,7 +380,7 @@ pre.raw.show{display:block}
   const rawTgl = $("#rawTgl"), rawPre = $("#rawPre");
   const filterChk = $("#filterChk"), filterInfo = $("#filterInfo");
 
-  let csvFile = null, modelFile = null;
+  let csvFile = null, modelFile = null, lastModelName = "";
   let sigT = null, sigP = null;   // parsed signal (for the plot only)
   let selKind = null, selDesc = "", selCount = 0;   // selection state (for re-labelling on lang change)
   let statusState = "wait";
@@ -459,19 +486,43 @@ pre.raw.show{display:block}
   /* ================= detect ================= */
   function showError(msg){ errbox.innerHTML = msg; errbox.classList.add("show"); result.classList.remove("show"); }
 
+  /* model selection: own upload > dropdown (fetched from /models) > Gokú default (backend-bundled) */
+  const modelCache = {};
+  function currentModelName(){
+    if (modelFile) return modelFile.name;
+    const v = modelSel.value;
+    if (!v) return "Gokú";
+    const opt = modelSel.options[modelSel.selectedIndex];
+    return opt ? opt.textContent.split("—")[0].trim() : v;
+  }
+  async function getModel(name){
+    if (modelCache[name]) return modelCache[name];
+    loadingTxt.textContent = L().ldModel;
+    const r = await fetch("../models/" + encodeURIComponent(name), {cache:"force-cache"});
+    if (!r.ok) throw new Error("model HTTP " + r.status);
+    const f = new File([await r.blob()], name, {type:"application/octet-stream"});
+    modelCache[name] = f;
+    return f;
+  }
+
   async function detect(){
     if (!csvFile){ showError(L().errPickFirst); return; }
     errbox.classList.remove("show"); result.classList.remove("show");
     detectBtn.disabled = true; loading.classList.add("show");
     loadingTxt.textContent = L().ldAnalyzing;
+    lastModelName = currentModelName();
     const slow = setTimeout(() => { loadingTxt.textContent = L().ldWaking; }, 3500);
-
-    const fd = new FormData();
-    fd.append("csv_file", csvFile, csvFile.name || "trace.csv");
-    fd.append("apply_filter", filterChk.checked ? "true" : "false");
-    if (modelFile) fd.append("model_file", modelFile, modelFile.name);
-
     try{
+      const fd = new FormData();
+      fd.append("csv_file", csvFile, csvFile.name || "trace.csv");
+      fd.append("apply_filter", filterChk.checked ? "true" : "false");
+      if (modelFile){
+        fd.append("model_file", modelFile, modelFile.name);
+      } else if (modelSel.value){
+        const mf = await getModel(modelSel.value);   // chosen bundled model, fetched from /models
+        fd.append("model_file", mf, modelSel.value);
+        loadingTxt.textContent = L().ldAnalyzing;
+      }
       const ctrl = new AbortController();
       const to = setTimeout(() => ctrl.abort(), 90000);
       const r = await fetch(API + "/api/analyze", {method:"POST", body:fd, signal:ctrl.signal});
@@ -518,7 +569,7 @@ pre.raw.show{display:block}
       agreeHtml +
       "<span><b>"+L().metaFs+"</b> "+j.fs_hz+" Hz</span>" +
       "<span><b>"+L().metaSamples+"</b> "+j.n_samples+"</span>" +
-      "<span><b>"+L().metaModel+"</b> "+(j.used_default_model?L().modelBundled:L().modelYours)+"</span>";
+      "<span><b>"+L().metaModel+"</b> "+(lastModelName || L().modelBundled)+"</span>";
 
     rawPre.textContent = JSON.stringify(j, null, 2);
     renderFilterInfo();
