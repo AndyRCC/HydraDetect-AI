@@ -60,29 +60,45 @@ An **Arduino Q** (Linux class) runs the FastAPI backend, samples the line at **5
 
 ```
 HydraDetect-AI/
-├── index.html                                  # interactive project page (live demo)
-├── src/
-│   ├── predictor.py                            # WaterHammer GUI simulator + predictor
-│   ├── water-trainer.py                        # real-dataset trainer  (CSV → .joblib)
-│   └── water_model_analizer.py                 # model evaluator on new CSV
-├── data/training/bypass_data/                  # labeled acquisitions, grouped by distance
-├── models/soldado_goku.joblib                  # trained voting ensemble
-└── downloads/
-    ├── HydroAnalyzer-v4.2-win64.py             # packaged desktop app (~10k lines)
-    └── HydraDetectAI-LittleBrother-win64.zip   # Arduino App Lab field project
+├── index.html                     # interactive project page (the live demo)
+├── detector/                      # in-browser detector — upload a CSV, get a verdict
+│   ├── index.html
+│   └── samples/                   # ready-to-try sample CSVs (bypass / normal)
+├── backend/                       # FastAPI inference service (deployed on Render)
+│   ├── app.py                     # POST /api/analyze · filtering + RF/SVM voting
+│   ├── model/soldado_goku.joblib  # bundled default model
+│   ├── Dockerfile · render.yaml · requirements.txt
+│   └── README.md
+├── models/                        # trained voting ensembles by pressure range (.joblib)
+│   ├── soldado_goku.joblib        # default — RF + SVM
+│   └── Freezer(mejorado).joblib · cell(mejorado).joblib · buu-1-1.5.joblib
+├── data/training/                 # labeled acquisitions — bypass_data / no_bypass_data / test_data
+├── downloads/
+│   ├── install.exe                            # HydroAnalyzer desktop installer (Windows)
+│   └── HydraDetectAI-LittleBrother-win64.zip  # Arduino App Lab field project
+└── sources/
+    └── instalador.py              # desktop-app installer build script
 ```
+
+> The packaged desktop app (`instalador.exe`) is published on the [**Releases**](https://github.com/AndyRCC/HydraDetect-AI/releases) page.
 
 ## Getting started
 
-```bash
-pip install pyqt5 matplotlib numpy scipy scikit-learn pywavelets pandas joblib
+**Just want to try it?** Open the [live demo](https://andyrcc.github.io/HydraDetect-AI/) or jump straight into the [browser detector](https://andyrcc.github.io/HydraDetect-AI/detector/) — upload one of the bundled sample CSVs and read the verdict.
 
-python src/water-trainer.py          # train on real CSVs  → export a .joblib
-python src/predictor.py              # simulate + predict   (load a .joblib)
-python src/water_model_analizer.py   # evaluate a model on new CSVs
+**Desktop app (Windows).** Download `instalador.exe` from the [Releases](https://github.com/AndyRCC/HydraDetect-AI/releases) page and run it — no Python setup required.
+
+**Field device.** Import [`HydraDetectAI-LittleBrother-win64.zip`](downloads/) into the Arduino App Lab and flash it to the Arduino Q.
+
+**Run the inference backend yourself.**
+
+```bash
+cd backend
+pip install -r requirements.txt
+python app.py            # serves FastAPI on :8000  (Dockerfile + render.yaml included)
 ```
 
-Prefer a single file? Grab the packaged desktop app from [`downloads/`](downloads/), or import the field project into the Arduino App Lab and flash it to the Arduino Q.
+See [`backend/README.md`](backend/README.md) for the API and deployment details.
 
 ## Authors
 
