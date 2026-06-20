@@ -437,12 +437,12 @@ footer{border-top:1px solid var(--line-soft);padding:60px 0 70px;background:rgba
 <body>
 
 <!-- ════════════════════════════════════════════════════════════
-     ANDY: download buttons now point to ./downloads/…
-       · HydroAnalyzer-v4.2-win64.py            (Python source)
-       · HydraDetectAI-LittleBrother-win64.zip  (Arduino App Lab project)
-     Drop those files into a /downloads folder next to this index.html,
-     or edit the href values in the #descargas section, the hero and the
-     two product sections.
+     ANDY: download buttons now point to:
+       · HydroAnalyzer → GitHub release: instalador.exe   (Windows installer)
+       · HydraDetectAI-LittleBrother-win64.zip            (Arduino App Lab project)
+     The .zip lives in a /downloads folder next to this index.html; the .exe is
+     served from the GitHub release. Edit the href values in the #descargas
+     section, the hero and the two product sections.
      ════════════════════════════════════════════════════════════ -->
 
 <canvas id="mathbg" aria-hidden="true"></canvas>
@@ -492,7 +492,7 @@ footer{border-top:1px solid var(--line-soft);padding:60px 0 70px;background:rgba
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
           <span data-i18n="hero.try">Try the live detector</span>
         </a>
-        <a class="btn btn-ghost" href="downloads/HydroAnalyzer-v4.2-win64.py" download>
+        <a class="btn btn-ghost" href="https://github.com/AndyRCC/HydraDetect-AI/releases/download/1.0/instalador.exe" download>
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           <span data-i18n="hero.dlHydro">Download HydroAnalyzer</span>
         </a>
@@ -705,11 +705,11 @@ footer{border-top:1px solid var(--line-soft);padding:60px 0 70px;background:rgba
           you analyze in another.
         </p>
         <div class="prod-cta rv d3">
-          <a class="btn btn-primary" href="downloads/HydroAnalyzer-v4.2-win64.py" download>
+          <a class="btn btn-primary" href="https://github.com/AndyRCC/HydraDetect-AI/releases/download/1.0/instalador.exe" download>
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            <span data-i18n="ha.dl">Download source (.py)</span>
+            <span data-i18n="ha.dl">Download installer (.exe)</span>
           </a>
-          <span class="mono" data-i18n="ha.dlmeta">Python 3 · PyQt5 · no build needed</span>
+          <span class="mono" data-i18n="ha.dlmeta">Windows 64-bit · double-click to install</span>
         </div>
       </div>
 
@@ -957,12 +957,12 @@ footer{border-top:1px solid var(--line-soft);padding:60px 0 70px;background:rgba
         <span class="dl-tag" data-i18n="dl.c1tag">Phase 1 · Desktop</span>
         <h3>HydroAnalyzer</h3>
         <div class="sub" data-i18n="dl.c1sub">v4.2 “Aurora” · PyQt5 · ~10,000 lines</div>
-        <p data-i18n="dl.c1p">Simulation, 6-stage filtering, synthetic and real training, 4 models with cross-validation, full analysis and <span class="mono" style="font-size:13px">.joblib</span> export. Distributed as Python source.</p>
-        <a class="btn btn-primary" href="downloads/HydroAnalyzer-v4.2-win64.py" download>
+        <p data-i18n="dl.c1p">Simulation, 6-stage filtering, synthetic and real training, 4 models with cross-validation, full analysis and <span class="mono" style="font-size:13px">.joblib</span> export. Distributed as a Windows installer (.exe).</p>
+        <a class="btn btn-primary" href="https://github.com/AndyRCC/HydraDetect-AI/releases/download/1.0/instalador.exe" download>
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          HydroAnalyzer-v4.2-win64.py
+          instalador.exe
         </a>
-        <div class="dl-meta"><span data-i18n="dl.c1m1">Python 3 · PyQt5</span><span class="mono">python HydroAnalyzer-v4.2-win64.py</span><span data-i18n="dl.c1m3">no packaging required</span></div>
+        <div class="dl-meta"><span data-i18n="dl.c1m1">Windows 10/11 · 64-bit</span><span class="mono">instalador.exe</span><span data-i18n="dl.c1m3">double-click to install</span></div>
       </div>
 
       <div class="dl-card c-field rv d1">
@@ -1640,7 +1640,7 @@ footer{border-top:1px solid var(--line-soft);padding:60px 0 70px;background:rgba
       "flow.s5t":"Fase 2 · Campo","flow.s5p":"El Arduino Q muestrea a 500 Hz, extrae las mismas 17 características y responde con un veredicto JSON al móvil.",
       "ha.eyebrow":"Fase 1 · Entrenar — aplicación de escritorio",
       "ha.lede":"Más de <strong>10 000 líneas de Python</strong> que llevan la señal cruda hasta el modelo exportado, sin salir de una sola ventana. Cuatro pestañas comparten un único objeto de modelo: lo que entrenas en una, lo analizas en la otra.",
-      "ha.dl":"Descargar código (.py)","ha.dlmeta":"Python 3 · PyQt5 · sin empaquetar",
+      "ha.dl":"Descargar instalador (.exe)","ha.dlmeta":"Windows 64-bit · doble clic para instalar",
       "ha.tab1":"🔬 Simulador","ha.tab2":"🧪 Entrenamiento sintético","ha.tab3":"📂 Entrenamiento real","ha.tab4":"📊 Análisis del modelo",
       "ha.vsynth":"Sintético · 1200 transitorios · CV 5-fold","ha.vreal":"CSV agrupados · augmentación ×4–10","ha.vsplit":"Partición 75 / 25 entrenamiento–prueba","ha.vanalysis":"Importancia de características · top 5 de 17",
       "ha.filtering":"Filtrado · 6 etapas","ha.duration":"duración","ha.manual":"manual","ha.consensus":"Consenso",
@@ -1669,8 +1669,8 @@ footer{border-top:1px solid var(--line-soft);padding:60px 0 70px;background:rgba
       "res.h3t":"explicable <span class=\"am\">&gt;</span> opaco","res.h3p":"Una CNN-1D de referencia alcanzó 91.5 % — pero exigió ~10× más datos y decisiones no interpretables. En casos de fraude, la explicabilidad gana: el consenso RF + SVM es el clasificador operativo.","res.h3s":"VS DEEP LEARNING",
       "dl.eyebrow":"Descargas","dl.h2":"Llévatelos.","dl.lede":"Dos archivos, una misma metodología. Entrena con uno, detecta con el otro.",
       "dl.c1tag":"Fase 1 · Escritorio","dl.c1sub":"v4.2 “Aurora” · PyQt5 · ~10 000 líneas",
-      "dl.c1p":"Simulación, filtrado de 6 etapas, entrenamiento sintético y real, 4 modelos con validación cruzada, análisis completo y exportación <span class=\"mono\" style=\"font-size:13px\">.joblib</span>. Se distribuye como código fuente de Python.",
-      "dl.c1m1":"Python 3 · PyQt5","dl.c1m3":"no requiere empaquetado",
+      "dl.c1p":"Simulación, filtrado de 6 etapas, entrenamiento sintético y real, 4 modelos con validación cruzada, análisis completo y exportación <span class=\"mono\" style=\"font-size:13px\">.joblib</span>. Se distribuye como instalador para Windows (.exe).",
+      "dl.c1m1":"Windows 10/11 · 64-bit","dl.c1m3":"doble clic para instalar",
       "dl.c2tag":"Fase 2 · Campo","dl.c2sub":"Little Brother · FastAPI · ensemble de 4 modelos",
       "dl.c2p":"Proyecto de Arduino App Lab: assets, sketch de Python, <span class=\"mono\" style=\"font-size:13px\">app.yaml</span> y readme. Impórtalo en Arduino App Lab y flashéalo en el Arduino Q.",
       "dl.c2m1":"Arduino App Lab","dl.c2m2":"importar proyecto y flashear","dl.c2m3":"compatible con modelos de HydroAnalyzer",
