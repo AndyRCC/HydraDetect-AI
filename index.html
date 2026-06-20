@@ -71,8 +71,6 @@ nav{position:fixed;top:0;left:0;right:0;z-index:60;height:64px;
 .nav-links a{font-family:var(--font-m);font-size:12px;letter-spacing:.07em;text-transform:uppercase;
   color:var(--dim);padding:8px 11px;border-radius:8px;white-space:nowrap;}
 .nav-links a:hover{color:var(--ink);background:rgba(143,196,238,.07);text-decoration:none}
-.nav-links a.nav-live{color:var(--cyan)}
-.nav-links a.nav-live:hover{color:var(--cyan);background:rgba(63,224,255,.12)}
 
 /* language switcher */
 .lang{position:relative;flex:0 0 auto}
@@ -461,7 +459,6 @@ footer{border-top:1px solid var(--line-soft);padding:60px 0 70px;background:rgba
       <a href="#hydroanalyzer">HydroAnalyzer</a>
       <a href="#littlebrother">Little Brother</a>
       <a href="#resultados" data-i18n="nav.results">Results</a>
-      <a href="detector/" class="nav-live" data-i18n="nav.detector">Live detector</a>
     </div>
     <div class="lang" id="langWrap" aria-expanded="false">
       <button class="lang-btn" id="langBtn" aria-haspopup="listbox" aria-controls="langMenu" aria-expanded="false" aria-label="Change language">
@@ -491,7 +488,11 @@ footer{border-top:1px solid var(--line-soft);padding:60px 0 70px;background:rgba
         from the laboratory bench to the point on the street.
       </p>
       <div class="cta-row rv d3">
-        <a class="btn btn-primary" href="downloads/HydroAnalyzer-v4.2-win64.py" download>
+        <a class="btn btn-primary" href="detector/">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+          <span data-i18n="hero.try">Try the live detector</span>
+        </a>
+        <a class="btn btn-ghost" href="downloads/HydroAnalyzer-v4.2-win64.py" download>
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           <span data-i18n="hero.dlHydro">Download HydroAnalyzer</span>
         </a>
@@ -1612,7 +1613,7 @@ footer{border-top:1px solid var(--line-soft);padding:60px 0 70px;background:rgba
       "hero.eyebrow":"UPC · Ingeniería Mecatrónica · Lima, Perú",
       "hero.h1":"El agua robada deja un <span class=\"echo\">eco</span>.",
       "hero.sub":"Un golpe de ariete controlado, <b>17 características</b> y cuatro modelos de machine learning convierten 30 segundos de presión en un veredicto explicable: <b>bypass</b> o <b>normal</b>. Dos programas lo hacen posible — del banco de laboratorio al punto de la calle.",
-      "hero.dlHydro":"Descargar HydroAnalyzer","hero.dlField":"Descargar HydraDetect-AI","hero.see":"ver cómo funciona ↓",
+      "hero.try":"Probar el detector en vivo","hero.dlHydro":"Descargar HydroAnalyzer","hero.dlField":"Descargar HydraDetect-AI","hero.see":"ver cómo funciona ↓",
       "hero.chip1":"% exactitud sintética","hero.chip2":"% en campo (n = 36)","hero.chip3a":"eco medido a","hero.chip4":"características · 4 modelos",
       "hero.scopeR":"REG #0042 · BYPASS @ 3 m · 3 bar","hero.refire":"clic para re-disparar",
       "prob.eyebrow":"El problema · agua no facturada","prob.h2":"El fraude que las auditorías no ven.",
