@@ -263,6 +263,7 @@ pre.raw.show{display:block}
       <option value="cell(mejorado).joblib" data-i18n="mCell">Cell — 0.5–1 bar</option>
       <option value="buu-1-1.5.joblib" data-i18n="mBuu">Buu — 1–1.5 bar</option>
     </select>
+    <p class="hint" id="autoModelInfo" style="margin:9px 2px 0;color:var(--aqua);min-height:1.1em"></p>
     <div class="model-own">
       <label class="file-lbl" data-i18n="modelOwnLbl">…or upload your own .joblib:</label><br>
       <input type="file" id="modelInput" accept=".joblib,.pkl">
@@ -323,9 +324,13 @@ pre.raw.show{display:block}
       selectedLbl:"Selected:",
       advSummary:"Advanced options",
       step2:"Choose a model", step3:"Detect",
-      modelHint:"Each model is tuned for a different initial-pressure range.",
+      modelHint:"Each model is tuned for a different initial-pressure range — loading a trace picks one automatically.",
       mGoku:"Gokú — general (default)", mFreezer:"Freezer — 0–0.5 bar", mCell:"Cell — 0.5–1 bar", mBuu:"Buu — 1–1.5 bar",
       modelOwnLbl:"…or upload your own .joblib:",
+      autoSel:(p,name)=>"initial pressure ≈ "+p+" bar → auto-selected: "+name,
+      autoGoku:p=>"initial pressure ≈ "+p+" bar — outside the specialized ranges → Gokú (general)",
+      autoManual:p=>"initial pressure ≈ "+p+" bar · model chosen manually",
+      autoOwn:p=>"initial pressure ≈ "+p+" bar · your uploaded model takes priority",
       detectBtn:"Detect bypass",
       footer:'HydraDetect-AI · UPC Mechatronics, Lima — <a href="../">project overview</a> · cyan = signal · amber = bypass',
       stConnecting:"connecting…", stOnline:"online", stOffline:"offline · retry",
@@ -358,9 +363,13 @@ pre.raw.show{display:block}
       selectedLbl:"Seleccionado:",
       advSummary:"Opciones avanzadas",
       step2:"Elige un modelo", step3:"Detectar",
-      modelHint:"Cada modelo está afinado para un rango de presión inicial distinto.",
+      modelHint:"Cada modelo está afinado para un rango de presión inicial distinto — al cargar una señal se elige automáticamente.",
       mGoku:"Gokú — general (por defecto)", mFreezer:"Freezer — 0–0.5 bar", mCell:"Cell — 0.5–1 bar", mBuu:"Buu — 1–1.5 bar",
       modelOwnLbl:"…o sube tu propio .joblib:",
+      autoSel:(p,name)=>"presión inicial ≈ "+p+" bar → autoseleccionado: "+name,
+      autoGoku:p=>"presión inicial ≈ "+p+" bar — fuera de los rangos especializados → Gokú (general)",
+      autoManual:p=>"presión inicial ≈ "+p+" bar · modelo elegido manualmente",
+      autoOwn:p=>"presión inicial ≈ "+p+" bar · se usará tu modelo subido",
       detectBtn:"Detectar bypass",
       footer:'HydraDetect-AI · UPC Mecatrónica, Lima — <a href="../">descripción del proyecto</a> · cian = señal · ámbar = bypass',
       stConnecting:"conectando…", stOnline:"en línea", stOffline:"sin conexión · reintentar",
@@ -395,11 +404,13 @@ pre.raw.show{display:block}
   const vPct = $("#vPct"), vLabel = $("#vLabel"), vSub = $("#vSub"), vModels = $("#vModels"), vMeta = $("#vMeta");
   const rawTgl = $("#rawTgl"), rawPre = $("#rawPre");
   const filterChk = $("#filterChk"), filterInfo = $("#filterInfo");
+  const autoModelInfo = $("#autoModelInfo");
 
   let csvFile = null, modelFile = null, lastModelName = "";
   let sigT = null, sigP = null;   // parsed signal (for the plot only)
   let sigPF = null, cleanedCount = 0;   // filtered preview of sigP (lazy)
   let selDesc = "", selCount = 0;   // selection state (for re-labelling on lang change)
+  let autoP0 = null, modelManual = false;   // detected initial pressure · manual model override
   let statusState = "wait";
   let lastResult = null;
 
@@ -444,7 +455,36 @@ pre.raw.show{display:block}
   ["dragleave","drop"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("over"); }));
   drop.addEventListener("drop", e => { const f = e.dataTransfer.files[0]; if (f) setCsv(f, f.name); });
 
-  modelInput.addEventListener("change", () => { modelFile = modelInput.files[0] || null; });
+  modelInput.addEventListener("change", () => { modelFile = modelInput.files[0] || null; renderAutoModel(); });
+
+  /* ============ auto model selection ============
+     p0 = median of the first 5% of samples — same definition the backend
+     uses for the 'baseline' feature. Each bundled model is tuned for an
+     initial-pressure range; the right one is picked when a trace loads. */
+  const MODEL_RANGES = [
+    {v:"Freezer(mejorado).joblib", lo:0,  hi:0.5},
+    {v:"cell(mejorado).joblib",    lo:0.5, hi:1},
+    {v:"buu-1-1.5.joblib",         lo:1,  hi:1.5}
+  ];
+  function pickModelFor(p0){
+    for (const m of MODEL_RANGES)
+      if (p0 >= m.lo && (p0 < m.hi || (m.hi === 1.5 && p0 === 1.5))) return m.v;
+    return "";   // Gokú — general
+  }
+  function autoSelectModel(){
+    if (autoP0 != null && !modelManual) modelSel.value = pickModelFor(autoP0);
+    renderAutoModel();
+  }
+  function renderAutoModel(){
+    if (autoP0 == null){ autoModelInfo.textContent = ""; return; }
+    const p = autoP0.toFixed(2);
+    if (modelFile){ autoModelInfo.textContent = L().autoOwn(p); return; }
+    if (modelManual){ autoModelInfo.textContent = L().autoManual(p); return; }
+    if (!modelSel.value){ autoModelInfo.textContent = L().autoGoku(p); return; }
+    const opt = modelSel.options[modelSel.selectedIndex];
+    autoModelInfo.textContent = L().autoSel(p, opt ? opt.textContent : modelSel.value);
+  }
+  modelSel.addEventListener("change", () => { modelManual = true; renderAutoModel(); });
 
   /* ================= parse + plot ================= */
   async function drawCsv(file){
@@ -461,12 +501,16 @@ pre.raw.show{display:block}
     if (pp.length < 2){
       // the picker is open to all file types, so reject anything without a signal
       csvFile = null; sigT = sigP = sigPF = null; plot.hidden = true; selCount = 0;
+      autoP0 = null; renderAutoModel();
       refreshDetect(); renderSelected();
       showError(L().errNoSignal);
       return;
     }
     sigT = Float64Array.from(tt); sigP = Float64Array.from(pp);
     sigPF = null; cleanedCount = 0;
+    autoP0 = medianOf(sigP.subarray(0, Math.max(1, Math.floor(0.05 * sigP.length))));
+    modelManual = false;
+    autoSelectModel();
     selCount = pp.length; renderSelected();
     updateFilterPreview();
   }
@@ -721,7 +765,7 @@ pre.raw.show{display:block}
     langCur.textContent = lang.toUpperCase();
     langOpts.forEach(o => { const on = o.dataset.lang === lang; o.classList.toggle("on", on); o.setAttribute("aria-selected", on); });
     try{ localStorage.setItem(LANG_KEY, lang); }catch(e){}
-    renderStatus(); renderSelected(); renderRaw(); renderFilterInfo();
+    renderStatus(); renderSelected(); renderRaw(); renderFilterInfo(); renderAutoModel();
     if (loading.classList.contains("show")) loadingTxt.textContent = L().ldAnalyzing;
     if (lastResult) render(lastResult);
   }
