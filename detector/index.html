@@ -148,6 +148,8 @@ main .card:nth-of-type(3){animation-delay:.24s}
 footer{animation:rise .55s ease both;animation-delay:.32s}
 @media (max-width:480px){
   .detect-row .btn-primary{width:100%}
+  .q-meta{display:none}
+  .q-name{max-width:none;flex:1}
   .nav-in{padding:0 14px;gap:8px}
   .nav-right{gap:7px}
   .status{font-size:10.5px;padding:5px 9px}
@@ -187,6 +189,52 @@ footer{animation:rise .55s ease both;animation-delay:.32s}
   padding:13px 15px;font-family:var(--font-m);font-size:12.5px;color:#FFC9C9;line-height:1.55}
 .errbox.show{display:block}
 .errbox a{color:#FFC9C9;text-decoration:underline}
+
+/* ============ multi-trace queue ============ */
+.queue{margin-top:14px;display:grid;gap:10px}
+.qrow{border:1px solid var(--line-soft);border-radius:var(--r-md);background:rgba(8,31,56,.42);overflow:hidden}
+.q-head{display:flex;align-items:center;gap:10px;padding:11px 14px;cursor:pointer;min-width:0}
+.q-head:hover{background:rgba(143,196,238,.04)}
+.q-chip{flex:0 0 auto;font-family:var(--font-m);font-size:10.5px;letter-spacing:.05em;padding:4px 10px;border-radius:99px;border:1px solid var(--line);color:var(--dim);white-space:nowrap}
+.q-chip.run{color:var(--cyan);border-color:rgba(63,224,255,.4);animation:pulse 1.1s infinite}
+.q-chip.bypass{color:var(--amber);border-color:rgba(255,178,62,.5);background:rgba(255,178,62,.1)}
+.q-chip.normal{color:var(--aqua);border-color:rgba(82,255,201,.45);background:rgba(82,255,201,.08)}
+.q-chip.err{color:var(--red);border-color:rgba(255,107,107,.45);background:rgba(255,107,107,.08)}
+.q-name{font-family:var(--font-m);font-size:12.5px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:38%}
+.q-meta{flex:1;font-family:var(--font-m);font-size:11px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.q-caret{flex:0 0 auto;color:var(--faint);font-size:10px;transition:transform .2s}
+.qrow.open .q-caret{transform:rotate(90deg)}
+.q-x{flex:0 0 auto;width:26px;height:26px;border-radius:8px;border:1px solid transparent;background:transparent;color:var(--faint);cursor:pointer;font-size:16px;line-height:1}
+.q-x:hover{color:var(--red);border-color:rgba(255,107,107,.4);background:rgba(255,107,107,.07)}
+.q-cfg{display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px;padding:0 14px 12px;font-family:var(--font-m);font-size:11.5px;color:var(--dim)}
+.q-cfg label{display:inline-flex;align-items:center;gap:7px;cursor:pointer}
+.q-cfg input[type=checkbox]{width:14px;height:14px;accent-color:var(--cyan);cursor:pointer;margin:0}
+.q-sel{font-family:var(--font-b);font-size:12.5px;color:var(--ink);cursor:pointer;background:rgba(3,16,30,.6);
+  border:1px solid var(--line);border-radius:8px;padding:6px 26px 6px 10px;appearance:none;-webkit-appearance:none;
+  background-image:url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%233FE0FF" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>');
+  background-repeat:no-repeat;background-position:right 8px center;background-size:11px}
+.q-sel:disabled{opacity:.45;cursor:not-allowed}
+.q-sel option{background:#0B2745;color:var(--ink)}
+.q-note{font-size:10.5px;color:var(--faint)}
+.q-note.warn{color:var(--amber)}
+.q-detail{border-top:1px solid var(--line-soft);padding:12px 14px 14px}
+.q-detail canvas{margin-top:0}
+.q-verdict{font-family:var(--font-d);font-weight:700;font-size:19px;letter-spacing:.01em;margin:14px 0 3px}
+.q-verdict.bypass{color:var(--amber)}
+.q-verdict.normal{color:var(--aqua)}
+.q-sub{font-family:var(--font-m);font-size:11.5px;color:var(--faint)}
+.q-detail .models{margin-top:14px}
+.q-errmsg{margin-top:12px;font-family:var(--font-m);font-size:12px;color:#FFC9C9;line-height:1.5}
+.q-json{margin-top:12px}
+.q-json summary{cursor:pointer;list-style:none;font-family:var(--font-m);font-size:11.5px;color:var(--faint)}
+.q-json summary::-webkit-details-marker{display:none}
+.q-json summary::before{content:"▸ ";color:var(--cyan)}
+.q-json[open] summary::before{content:"▾ "}
+.summary{display:none;font-family:var(--font-m);font-size:12.5px;color:var(--dim);margin:0 0 16px}
+.summary.show{display:block}
+.summary b.by{color:var(--amber);font-weight:500}
+.summary b.no{color:var(--aqua);font-weight:500}
+
 footer{padding:30px 0 50px;text-align:center;font-family:var(--font-m);font-size:11.5px;color:var(--faint)}
 .rawtgl{margin-top:14px;font-family:var(--font-m);font-size:11.5px;color:var(--faint);cursor:pointer}
 pre.raw{display:none;margin-top:8px;max-height:240px;overflow:auto;font-family:var(--font-m);font-size:11px;color:var(--dim);
@@ -238,41 +286,15 @@ pre.raw.show{display:block}
       </span>
       <div class="big" data-i18n="dropBig">Drop a CSV here, or click to browse</div>
       <div class="sm" data-i18n="dropSm">two columns — time, pressure · ~30 s window</div>
-      <input type="file" id="fileInput" hidden>
+      <input type="file" id="fileInput" multiple hidden>
     </div>
-    <div class="sel" id="sel"><span data-i18n="selectedLbl">Selected:</span> <span class="name" id="selName">—</span> <span id="selMeta"></span></div>
-    <canvas id="plot" height="150" hidden></canvas>
-
-    <details class="adv">
-      <summary data-i18n="advSummary">Advanced options</summary>
-      <div class="body">
-        <label class="optchk"><input type="checkbox" id="filterChk" checked> <span data-i18n="filterLbl">Apply HydroAnalyzer's default filter</span></label>
-        <p class="hint" data-i18n="filterHint" style="margin:7px 0 3px">Cleans the signal exactly like the desktop app — 3 stages: neighbor anti-spike · Hampel · IQR envelope.</p>
-        <p class="hint" id="filterInfo" style="color:var(--aqua);min-height:1.1em;margin:0"></p>
-      </div>
-    </details>
+    <p class="hint" data-i18n="queueHint" style="margin-top:12px">Each trace is set up automatically: the model from its initial pressure, the filter off under 100 Hz. Both can be changed per file.</p>
+    <div class="queue" id="queue"></div>
   </section>
 
-  <!-- STEP 2 — model -->
+  <!-- STEP 2 — detect -->
   <section class="card">
-    <div class="step-h"><span class="step-n">2</span><span class="step-t" data-i18n="step2">Choose a model</span></div>
-    <p class="hint" data-i18n="modelHint" style="margin-bottom:12px">Each model is tuned for a different initial-pressure range.</p>
-    <select id="modelSel" class="model-sel" aria-label="Model">
-      <option value="" data-i18n="mGoku">Gokú — general (default)</option>
-      <option value="Freezer(mejorado).joblib" data-i18n="mFreezer">Freezer — 0–0.5 bar</option>
-      <option value="cell(mejorado).joblib" data-i18n="mCell">Cell — 0.5–1 bar</option>
-      <option value="buu-1-1.5.joblib" data-i18n="mBuu">Buu — 1–1.5 bar</option>
-    </select>
-    <p class="hint" id="autoModelInfo" style="margin:9px 2px 0;color:var(--aqua);min-height:1.1em"></p>
-    <div class="model-own">
-      <label class="file-lbl" data-i18n="modelOwnLbl">…or upload your own .joblib:</label><br>
-      <input type="file" id="modelInput" accept=".joblib,.pkl">
-    </div>
-  </section>
-
-  <!-- STEP 3 — detect -->
-  <section class="card">
-    <div class="step-h"><span class="step-n">3</span><span class="step-t" data-i18n="step3">Detect</span></div>
+    <div class="step-h"><span class="step-n">2</span><span class="step-t" data-i18n="step3">Detect</span></div>
     <div class="detect-row">
       <button class="btn btn-primary" id="detectBtn" type="button" disabled>
         <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
@@ -281,19 +303,16 @@ pre.raw.show{display:block}
       <div class="loading" id="loading"><span class="spin"></span><span id="loadingTxt">Analyzing…</span></div>
     </div>
 
+    <div class="summary" id="summary"></div>
     <div class="errbox" id="errbox"></div>
 
-    <div class="result" id="result">
-      <div class="verdict-box">
-        <div class="verdict-pct" id="vPct">—</div>
-        <div class="verdict-label" id="vLabel">—</div>
-        <div class="verdict-sub" id="vSub"></div>
+    <details class="adv">
+      <summary data-i18n="advSummary">Advanced options</summary>
+      <div class="body">
+        <label class="file-lbl" data-i18n="modelOwnLbl">…or upload your own .joblib (it will be used for every trace):</label><br>
+        <input type="file" id="modelInput" accept=".joblib,.pkl">
       </div>
-      <div class="models" id="vModels"></div>
-      <div class="meta" id="vMeta"></div>
-      <div class="rawtgl" id="rawTgl">▸ raw JSON response</div>
-      <pre class="raw" id="rawPre"></pre>
-    </div>
+    </details>
   </section>
 
 </main>
@@ -317,16 +336,16 @@ pre.raw.show{display:block}
       docTitle:"HydraDetect-AI — Live detector",
       eyebrow:"Live detector · RF + SVM ensemble",
       h1:"Run the model on a <b>pressure trace</b>.",
-      lede:'Upload a 30-second pressure CSV and the <strong>same model the Little Brother device runs</strong> returns a <strong>bypass</strong> or <strong>normal</strong> verdict. The maths happens in a Python backend; this page just shows the result.',
-      step1:"Choose a pressure trace",
-      dropBig:"Drop a CSV here, or click to browse",
+      lede:'Upload one or several 30-second pressure CSVs and the <strong>same model the Little Brother device runs</strong> returns a <strong>bypass</strong> or <strong>normal</strong> verdict for each one. The maths happens in a Python backend; this page just shows the result.',
+      step1:"Choose pressure traces",
+      dropBig:"Drop one or more CSVs here, or click to browse",
       dropSm:"two columns — time, pressure · ~30 s window",
       selectedLbl:"Selected:",
       advSummary:"Advanced options",
       step2:"Choose a model", step3:"Detect",
       modelHint:"Each model is tuned for a different initial-pressure range — loading a trace picks one automatically.",
       mGoku:"Gokú — general (default)", mFreezer:"Freezer — 0–0.5 bar", mCell:"Cell — 0.5–1 bar", mBuu:"Buu — 1–1.5 bar",
-      modelOwnLbl:"…or upload your own .joblib:",
+      modelOwnLbl:"…or upload your own .joblib (it will be used for every trace):",
       autoSel:(p,name)=>"initial pressure ≈ "+p+" bar → auto-selected: "+name,
       autoGoku:p=>"initial pressure ≈ "+p+" bar — outside the specialized ranges → Gokú (general)",
       autoManual:p=>"initial pressure ≈ "+p+" bar · model chosen manually",
@@ -341,7 +360,7 @@ pre.raw.show{display:block}
       metaFs:"fs", metaSamples:"samples", metaModel:"model",
       modelBundled:"bundled RF+SVM", modelYours:"your upload",
       selSamples:"samples",
-      errPickFirst:"Pick a CSV first.",
+      errPickFirst:"Add at least one CSV first.",
       errNoSignal:"That file doesn't look like a pressure CSV — no numeric “time, pressure” pairs were found. Pick another file.",
       errUnreachable:"<b>Couldn't reach the backend.</b><br>The free server may still be waking up (~30 s the first time) — wait a moment and try again.",
       errBackend:(msg,step)=>"<b>Backend error:</b> "+msg+(step?" <span class='mono'>(step: "+step+")</span>":""),
@@ -351,22 +370,31 @@ pre.raw.show{display:block}
       cleaned:n=>n+" point"+(n!==1?"s":"")+" cleaned by the filter",
       filterBusy:"applying filter…",
       previewCleaned:n=>"filter preview — "+n+" point"+(n!==1?"s":"")+" corrected",
-      filterOffLowFs:fs=>"filter turned off — trace sampled at ~"+fs+" Hz (needs ≥ 100 Hz)"
+      filterOffLowFs:fs=>"filter turned off — trace sampled at ~"+fs+" Hz (needs ≥ 100 Hz)",
+      queueHint:"Each trace is set up automatically: the model from its initial pressure, the filter off under 100 Hz. Both can be changed per file.",
+      qModel:"model", qFilter:"filter",
+      chipReady:"ready", chipRun:"analyzing…", chipErr:"error",
+      rmTitle:"Remove from the list",
+      ldBatch:(i,n,name)=>"Analyzing "+i+"/"+n+" — "+name+"…",
+      p0Short:"p₀",
+      summary:(b,nn,done,tot)=>"<b class='by'>"+b+" BYPASS</b> · <b class='no'>"+nn+" NORMAL</b> — "+done+"/"+tot+" trace"+(tot>1?"s":"")+" analyzed",
+      ownAllNote:"your .joblib will be used for every trace",
+      errNoSignalN:names=>"Not pressure CSVs (no numeric “time, pressure” pairs): "+names
     },
     es: {
       docTitle:"HydraDetect-AI — Detector en vivo",
       eyebrow:"Detector en vivo · ensemble RF + SVM",
       h1:"Corre el modelo sobre una <b>traza de presión</b>.",
-      lede:'Sube un CSV de presión de 30 segundos y el <strong>mismo modelo que ejecuta el dispositivo Little Brother</strong> devuelve un veredicto <strong>bypass</strong> o <strong>normal</strong>. El cálculo ocurre en un backend de Python; esta página solo muestra el resultado.',
-      step1:"Elige una traza de presión",
-      dropBig:"Suelta un CSV aquí, o haz clic para buscar",
+      lede:'Sube uno o varios CSV de presión de 30 segundos y el <strong>mismo modelo que ejecuta el dispositivo Little Brother</strong> devuelve un veredicto <strong>bypass</strong> o <strong>normal</strong> por cada uno. El cálculo ocurre en un backend de Python; esta página solo muestra el resultado.',
+      step1:"Elige trazas de presión",
+      dropBig:"Suelta uno o varios CSV aquí, o haz clic para buscar",
       dropSm:"dos columnas — tiempo, presión · ventana ~30 s",
       selectedLbl:"Seleccionado:",
       advSummary:"Opciones avanzadas",
       step2:"Elige un modelo", step3:"Detectar",
       modelHint:"Cada modelo está afinado para un rango de presión inicial distinto — al cargar una señal se elige automáticamente.",
       mGoku:"Gokú — general (por defecto)", mFreezer:"Freezer — 0–0.5 bar", mCell:"Cell — 0.5–1 bar", mBuu:"Buu — 1–1.5 bar",
-      modelOwnLbl:"…o sube tu propio .joblib:",
+      modelOwnLbl:"…o sube tu propio .joblib (se usará para todas las trazas):",
       autoSel:(p,name)=>"presión inicial ≈ "+p+" bar → autoseleccionado: "+name,
       autoGoku:p=>"presión inicial ≈ "+p+" bar — fuera de los rangos especializados → Gokú (general)",
       autoManual:p=>"presión inicial ≈ "+p+" bar · modelo elegido manualmente",
@@ -381,7 +409,7 @@ pre.raw.show{display:block}
       metaFs:"fs", metaSamples:"muestras", metaModel:"modelo",
       modelBundled:"incluido RF+SVM", modelYours:"tu modelo",
       selSamples:"muestras",
-      errPickFirst:"Elige un CSV primero.",
+      errPickFirst:"Agrega al menos un CSV primero.",
       errNoSignal:"Ese archivo no parece un CSV de presión — no se encontraron pares numéricos «tiempo, presión». Elige otro archivo.",
       errUnreachable:"<b>No se pudo contactar el backend.</b><br>El servidor gratuito puede estar despertando (~30 s la primera vez) — espera un momento y reintenta.",
       errBackend:(msg,step)=>"<b>Error del backend:</b> "+msg+(step?" <span class='mono'>(paso: "+step+")</span>":""),
@@ -391,7 +419,16 @@ pre.raw.show{display:block}
       cleaned:n=>n+" punto"+(n!==1?"s":"")+" limpiado"+(n!==1?"s":"")+" por el filtro",
       filterBusy:"aplicando filtro…",
       previewCleaned:n=>"vista previa del filtro — "+n+" punto"+(n!==1?"s":"")+" corregido"+(n!==1?"s":""),
-      filterOffLowFs:fs=>"filtro desactivado — señal muestreada a ~"+fs+" Hz (requiere ≥ 100 Hz)"
+      filterOffLowFs:fs=>"filtro desactivado — señal muestreada a ~"+fs+" Hz (requiere ≥ 100 Hz)",
+      queueHint:"Cada traza se configura automáticamente: el modelo según su presión inicial y el filtro apagado bajo 100 Hz. Ambos se pueden cambiar por archivo.",
+      qModel:"modelo", qFilter:"filtro",
+      chipReady:"listo", chipRun:"analizando…", chipErr:"error",
+      rmTitle:"Quitar de la lista",
+      ldBatch:(i,n,name)=>"Analizando "+i+"/"+n+" — "+name+"…",
+      p0Short:"p₀",
+      summary:(b,nn,done,tot)=>"<b class='by'>"+b+" BYPASS</b> · <b class='no'>"+nn+" NORMAL</b> — "+done+"/"+tot+" traza"+(tot>1?"s":"")+" analizada"+(tot>1?"s":""),
+      ownAllNote:"tu .joblib se usará para todas las trazas",
+      errNoSignalN:names=>"No parecen CSV de presión (sin pares numéricos «tiempo, presión»): "+names
     }
   };
   let LANG = "en";
@@ -399,23 +436,15 @@ pre.raw.show{display:block}
 
   /* ================= elements ================= */
   const statusEl = $("#status"), statusTxt = $("#statusTxt");
-  const drop = $("#drop"), fileInput = $("#fileInput"), modelInput = $("#modelInput"), modelSel = $("#modelSel");
-  const sel = $("#sel"), selName = $("#selName"), selMeta = $("#selMeta"), plot = $("#plot");
+  const drop = $("#drop"), fileInput = $("#fileInput"), modelInput = $("#modelInput");
+  const queueEl = $("#queue"), summaryEl = $("#summary");
   const detectBtn = $("#detectBtn"), loading = $("#loading"), loadingTxt = $("#loadingTxt");
-  const result = $("#result"), errbox = $("#errbox");
-  const vPct = $("#vPct"), vLabel = $("#vLabel"), vSub = $("#vSub"), vModels = $("#vModels"), vMeta = $("#vMeta");
-  const rawTgl = $("#rawTgl"), rawPre = $("#rawPre");
-  const filterChk = $("#filterChk"), filterInfo = $("#filterInfo");
-  const autoModelInfo = $("#autoModelInfo");
+  const errbox = $("#errbox");
 
-  let csvFile = null, modelFile = null, lastModelName = "";
-  let sigT = null, sigP = null;   // parsed signal (for the plot only)
-  let sigPF = null, cleanedCount = 0;   // filtered preview of sigP (lazy)
-  let selDesc = "", selCount = 0;   // selection state (for re-labelling on lang change)
-  let autoP0 = null, modelManual = false;   // detected initial pressure · manual model override
-  let sigFs = null, filterManual = false;   // detected sampling rate · manual filter override
+  let modelFile = null;           // optional global .joblib — used for every trace
+  let queue = [], nextId = 1;     // one entry per loaded trace
+  let runningBatch = false;
   let statusState = "wait";
-  let lastResult = null;
 
   /* ================= status pill ================= */
   function setStatus(state){ statusState = state; statusEl.className = "status " + state; renderStatus(); }
@@ -436,34 +465,23 @@ pre.raw.show{display:block}
   statusEl.addEventListener("keydown", e => { if ((e.key === "Enter" || e.key === " ") && statusState !== "ok"){ e.preventDefault(); ping(); } });
 
   /* ================= file selection ================= */
-  function refreshDetect(){ detectBtn.disabled = !csvFile; }
+  const escapeHtml = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
-  function renderSelected(){
-    if (!csvFile){ sel.classList.remove("show"); return; }
-    selName.textContent = selDesc;
-    selMeta.textContent = selCount ? "· " + selCount + " " + L().selSamples : "";
-    sel.classList.add("show");
-  }
-  function setCsv(file, desc){
-    csvFile = file; selDesc = desc || file.name;
-    errbox.classList.remove("show");
-    refreshDetect();
-    drawCsv(file);
-    renderSelected();
-  }
   drop.addEventListener("click", () => fileInput.click());
   drop.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " "){ e.preventDefault(); fileInput.click(); } });
-  fileInput.addEventListener("change", () => { if (fileInput.files[0]){ const f = fileInput.files[0]; setCsv(f, f.name); fileInput.value = ""; } });
+  fileInput.addEventListener("change", () => { if (fileInput.files.length){ addFiles([...fileInput.files]); fileInput.value = ""; } });
   ["dragover","dragenter"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("over"); }));
   ["dragleave","drop"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("over"); }));
-  drop.addEventListener("drop", e => { const f = e.dataTransfer.files[0]; if (f) setCsv(f, f.name); });
+  drop.addEventListener("drop", e => { if (e.dataTransfer.files.length) addFiles([...e.dataTransfer.files]); });
 
-  modelInput.addEventListener("change", () => { modelFile = modelInput.files[0] || null; renderAutoModel(); });
+  /* the global .joblib overrides every per-row selection, so results go stale */
+  modelInput.addEventListener("change", () => {
+    modelFile = modelInput.files[0] || null;
+    queue.forEach(invalidate);
+    renderQueue(); refreshDetect(); renderSummary();
+  });
 
-  /* ============ auto model selection ============
-     p0 = median of the first 5% of samples — same definition the backend
-     uses for the 'baseline' feature. Each bundled model is tuned for an
-     initial-pressure range; the right one is picked when a trace loads. */
+  /* ============ auto model selection (per trace) ============ */
   const MODEL_RANGES = [
     {v:"Freezer(mejorado).joblib", lo:0,  hi:0.5},
     {v:"cell(mejorado).joblib",    lo:0.5, hi:1},
@@ -474,25 +492,24 @@ pre.raw.show{display:block}
       if (p0 >= m.lo && (p0 < m.hi || (m.hi === 1.5 && p0 === 1.5))) return m.v;
     return "";   // Gokú — general
   }
-  function autoSelectModel(){
-    if (autoP0 != null && !modelManual) modelSel.value = pickModelFor(autoP0);
-    renderAutoModel();
+  const MODEL_OPTS = [
+    {v:"", k:"mGoku"},
+    {v:"Freezer(mejorado).joblib", k:"mFreezer"},
+    {v:"cell(mejorado).joblib",    k:"mCell"},
+    {v:"buu-1-1.5.joblib",         k:"mBuu"}
+  ];
+  function optionsHtml(selVal){
+    return MODEL_OPTS.map(o => "<option value=\""+o.v+"\""+(o.v === selVal ? " selected" : "")+">"+L()[o.k]+"</option>").join("");
   }
-  function renderAutoModel(){
-    if (autoP0 == null){ autoModelInfo.textContent = ""; return; }
-    const p = autoP0.toFixed(2);
-    if (modelFile){ autoModelInfo.textContent = L().autoOwn(p); return; }
-    if (modelManual){ autoModelInfo.textContent = L().autoManual(p); return; }
-    if (!modelSel.value){ autoModelInfo.textContent = L().autoGoku(p); return; }
-    const opt = modelSel.options[modelSel.selectedIndex];
-    autoModelInfo.textContent = L().autoSel(p, opt ? opt.textContent : modelSel.value);
+  function usedModelName(e){
+    if (modelFile) return modelFile.name;
+    if (!e.model) return "Gokú";
+    const o = MODEL_OPTS.find(o => o.v === e.model);
+    return o ? L()[o.k].split("—")[0].trim() : e.model;
   }
-  modelSel.addEventListener("change", () => { modelManual = true; renderAutoModel(); });
 
-  /* ================= parse + plot ================= */
-  async function drawCsv(file){
-    let text;
-    try{ text = await file.text(); }catch(e){ text = ""; }
+  /* ================= parse ================= */
+  function parseCsv(text){
     const rows = text.replace(/^﻿/, "").trim().split(/\r?\n/);
     const tt = [], pp = [];
     for (const line of rows){
@@ -501,30 +518,36 @@ pre.raw.show{display:block}
       const x = parseFloat(parts[0]), y = parseFloat(parts[1]);
       if (Number.isFinite(x) && Number.isFinite(y)){ tt.push(x); pp.push(y); }
     }
-    if (pp.length < 2){
-      // the picker is open to all file types, so reject anything without a signal
-      csvFile = null; sigT = sigP = sigPF = null; plot.hidden = true; selCount = 0;
-      autoP0 = null; renderAutoModel();
-      sigFs = null;
-      refreshDetect(); renderSelected();
-      showError(L().errNoSignal);
-      return;
+    if (pp.length < 2) return null;
+    return {t: Float64Array.from(tt), p: Float64Array.from(pp)};
+  }
+
+  /* one queue entry per loaded trace — model and filter are configured
+     automatically from the trace itself and stay editable per file:
+     · p0 = median of the first 5% of samples (the backend's 'baseline')
+       picks the specialized model for that pressure range;
+     · fs = round(1 / median(positive dt)) (the backend's definition) turns
+       the filter off below 100 Hz, since its windows are sized in samples
+       for high-rate captures. */
+  async function addFiles(files){
+    const bad = [];
+    for (const f of files){
+      let text = "";
+      try{ text = await f.text(); }catch(e){}
+      const sig = parseCsv(text);
+      if (!sig){ bad.push(f.name); continue; }
+      const p0 = medianOf(sig.p.subarray(0, Math.max(1, Math.floor(0.05 * sig.p.length))));
+      const dts = [];
+      for (let i = 1; i < sig.t.length; i++){ const d = sig.t[i] - sig.t[i-1]; if (d > 0) dts.push(d); }
+      const fs = Math.max(1, Math.round(1 / (dts.length ? medianOf(Float64Array.from(dts)) : 1e-3)));
+      queue.push({id: nextId++, file: f, name: f.name, t: sig.t, p: sig.p, pf: null, cleaned: 0,
+        fs: fs, p0: p0, model: pickModelFor(p0), filter: fs >= 100,
+        status: "ready", result: null, err: null, expanded: false, _computing: false});
     }
-    sigT = Float64Array.from(tt); sigP = Float64Array.from(pp);
-    sigPF = null; cleanedCount = 0;
-    autoP0 = medianOf(sigP.subarray(0, Math.max(1, Math.floor(0.05 * sigP.length))));
-    modelManual = false;
-    autoSelectModel();
-    // fs = round(1 / median(positive dt)) — the backend's own definition.
-    // The filter's windows are sized in samples for high-rate captures, so it
-    // stays on by default and switches itself off below 100 Hz.
-    const dts = [];
-    for (let i = 1; i < sigT.length; i++){ const d = sigT[i] - sigT[i-1]; if (d > 0) dts.push(d); }
-    sigFs = Math.max(1, Math.round(1 / (dts.length ? medianOf(Float64Array.from(dts)) : 1e-3)));
-    filterManual = false;
-    filterChk.checked = sigFs >= 100;
-    selCount = pp.length; renderSelected();
-    updateFilterPreview();
+    if (queue.length === 1) queue[0].expanded = true;
+    if (bad.length) showError(L().errNoSignalN(bad.map(escapeHtml).join(", ")));
+    else errbox.classList.remove("show");
+    renderQueue(); refreshDetect(); renderSummary();
   }
 
   /* ============ client-side port of HydroAnalyzer's default filter ============
@@ -609,44 +632,95 @@ pre.raw.show{display:block}
     return iqrEnvelopeFilter(out, 31, 3, 3, 201);
   }
 
-  /* recompute (lazily) and redraw when the checkbox or the trace changes */
-  function updateFilterPreview(){
-    if (filterChk.checked && sigP && !sigPF){
-      filterInfo.textContent = L().filterBusy;
-      setTimeout(() => {
-        if (!sigP){ renderPlot(); renderFilterInfo(); return; }
-        sigPF = applyDefaultFilter(sigP);
-        cleanedCount = 0;
-        for (let i=0;i<sigP.length;i++) if (sigPF[i] !== sigP[i]) cleanedCount++;
-        renderPlot(); renderFilterInfo();
-      }, 30);
-      return;
+  /* ================= queue rendering ================= */
+  function chipHtml(e){
+    if (e.status === "running") return "<span class='q-chip run'>"+L().chipRun+"</span>";
+    if (e.status === "error") return "<span class='q-chip err'>"+L().chipErr+"</span>";
+    if (e.status === "done"){
+      const by = e.result.label === "BYPASS";
+      return "<span class='q-chip "+(by?"bypass":"normal")+"'>"+(by?"BYPASS":"NORMAL")+" · "+e.result.confidence.toFixed(1)+" %</span>";
     }
-    renderPlot(); renderFilterInfo();
+    return "<span class='q-chip'>"+L().chipReady+"</span>";
   }
-  filterChk.addEventListener("change", () => { filterManual = true; updateFilterPreview(); });
-
-  /* while the box is ticked the live preview count is shown; if it switched
-     itself off for a low-rate trace that is explained; otherwise the backend's
-     authoritative count from the last run (filtering is server-side) */
-  function renderFilterInfo(){
-    if (filterChk.checked && sigPF){ filterInfo.textContent = L().previewCleaned(cleanedCount); return; }
-    if (!filterChk.checked && sigFs != null && sigFs < 100){ filterInfo.textContent = L().filterOffLowFs(sigFs); return; }
-    filterInfo.textContent = (lastResult && lastResult.filter_applied)
-      ? L().cleaned(lastResult.points_cleaned) : "";
+  function detailHtml(e){
+    let h = "<canvas data-plot='"+e.id+"' height='120'></canvas>";
+    if (e.filter) h += "<p class='hint' data-fi='"+e.id+"' style='color:var(--aqua);margin-top:7px;min-height:1.1em'></p>";
+    if (e.status === "error" && e.err) h += "<div class='q-errmsg'>"+L().errBackend(escapeHtml(e.err.msg), e.err.step)+"</div>";
+    if (e.status === "done"){
+      const j = e.result, by = j.label === "BYPASS";
+      h += "<div class='q-verdict "+(by?"bypass":"normal")+"'>"+(by?L().vBypass:L().vNormal)+" · "+j.confidence.toFixed(1)+" %</div>";
+      h += "<div class='q-sub'>"+L().vSub(j.prob_bypass.toFixed(1), j.n_models)+"</div>";
+      h += "<div class='models"+(by?"":" normal")+"'>";
+      Object.keys(j.models).forEach(k => {
+        const m = j.models[k];
+        h += "<div class='m'><span>"+(ICON[k]||k.toUpperCase())+"</span><span class='bar'><i style='width:"+Math.max(2, m.confidence)+"%'></i></span><span class='v'>"+m.confidence.toFixed(1)+"</span></div>";
+      });
+      h += "</div>";
+      const agreeHtml = j.agreement === null ? "" :
+        "<span class='agree "+(j.agreement?"yes":"no")+"'>"+(j.agreement?L().agreeYes:L().agreeNo)+"</span>";
+      h += "<div class='meta'>"+agreeHtml+
+        "<span><b>"+L().metaFs+"</b> "+j.fs_hz+" Hz</span>"+
+        "<span><b>"+L().metaSamples+"</b> "+j.n_samples+"</span>"+
+        "<span><b>"+L().metaModel+"</b> "+escapeHtml(usedModelName(e))+"</span>"+
+        (j.filter_applied ? "<span>"+L().cleaned(j.points_cleaned)+"</span>" : "")+
+      "</div>";
+      h += "<details class='q-json'><summary>"+L().raw+"</summary><pre class='raw show'>"+escapeHtml(JSON.stringify(j, null, 2))+"</pre></details>";
+    }
+    return h;
   }
-  function renderPlot(){
-    if (!sigP){ plot.hidden = true; return; }
-    plot.hidden = false;
+  function rowHtml(e){
+    const meta = e.fs+" Hz · "+e.p.length+" "+L().metaSamples+" · "+L().p0Short+" "+e.p0.toFixed(2)+" bar";
+    const lowFs = e.fs < 100 ? "<span class='q-note warn'>"+L().filterOffLowFs(e.fs)+"</span>" : "";
+    const ownNote = modelFile ? "<span class='q-note'>"+L().ownAllNote+"</span>" : "";
+    return "<div class='qrow"+(e.expanded?" open":"")+"' data-id='"+e.id+"'>"+
+      "<div class='q-head'>"+chipHtml(e)+
+        "<span class='q-name'>"+escapeHtml(e.name)+"</span>"+
+        "<span class='q-meta'>"+meta+"</span>"+
+        "<span class='q-caret'>▸</span>"+
+        "<button class='q-x' type='button' data-act='rm' title='"+L().rmTitle+"' aria-label='"+L().rmTitle+"'>×</button>"+
+      "</div>"+
+      "<div class='q-cfg'>"+
+        "<label>"+L().qModel+" <select class='q-sel' data-act='model'"+(modelFile?" disabled":"")+">"+optionsHtml(e.model)+"</select></label>"+
+        "<label>"+L().qFilter+" <input type='checkbox' data-act='filter'"+(e.filter?" checked":"")+"></label>"+
+        lowFs + ownNote +
+      "</div>"+
+      (e.expanded ? "<div class='q-detail'>"+detailHtml(e)+"</div>" : "")+
+    "</div>";
+  }
+  function renderQueue(){
+    queueEl.innerHTML = queue.map(rowHtml).join("");
+    queue.forEach(e => { if (e.expanded) drawEntry(e); });
+  }
+  /* expanded rows draw their plot; the filter preview is computed lazily
+     (and cached) with the same JS port of the backend pipeline */
+  function drawEntry(e){
+    const cv = queueEl.querySelector("canvas[data-plot='"+e.id+"']");
+    if (cv) drawPlot(cv, e);
+    const fi = queueEl.querySelector("[data-fi='"+e.id+"']");
+    if (!e.filter) return;
+    if (e.pf){ if (fi) fi.textContent = L().previewCleaned(e.cleaned); return; }
+    if (fi) fi.textContent = L().filterBusy;
+    if (!e._computing){
+      e._computing = true;
+      setTimeout(() => {
+        e.pf = applyDefaultFilter(e.p);
+        e.cleaned = 0;
+        for (let i = 0; i < e.p.length; i++) if (e.pf[i] !== e.p[i]) e.cleaned++;
+        e._computing = false;
+        if (e.expanded) drawEntry(e);
+      }, 30);
+    }
+  }
+  function drawPlot(cv, e){
     const dpr = Math.min(window.devicePixelRatio||1, 2);
-    const cssW = plot.getBoundingClientRect().width || 700, cssH = 150;
-    plot.width = Math.round(cssW*dpr); plot.height = Math.round(cssH*dpr);
-    const ctx = plot.getContext("2d"); ctx.setTransform(dpr,0,0,dpr,0,0);
+    const cssW = cv.getBoundingClientRect().width || 700, cssH = 120;
+    cv.width = Math.round(cssW*dpr); cv.height = Math.round(cssH*dpr);
+    const ctx = cv.getContext("2d"); ctx.setTransform(dpr,0,0,dpr,0,0);
     ctx.clearRect(0,0,cssW,cssH);
-    const padL=8,padR=8,padT=12,padB=12, pw=cssW-padL-padR, ph=cssH-padT-padB;
-    const n = sigP.length, x0 = sigT[0], x1 = sigT[n-1];
+    const padL=8,padR=8,padT=10,padB=10, pw=cssW-padL-padR, ph=cssH-padT-padB;
+    const n = e.p.length, x0 = e.t[0], x1 = e.t[n-1];
     let ymin=Infinity, ymax=-Infinity;
-    for (let i=0;i<n;i++){ const y=sigP[i]; if(y<ymin)ymin=y; if(y>ymax)ymax=y; }
+    for (let i=0;i<n;i++){ const y=e.p[i]; if(y<ymin)ymin=y; if(y>ymax)ymax=y; }
     if (ymax-ymin < 1e-9){ ymax+=1; ymin-=1; }
     const X = x => padL + (x-x0)/((x1-x0)||1)*pw;
     const Y = y => padT + (1-(y-ymin)/((ymax-ymin)||1))*ph;
@@ -654,31 +728,58 @@ pre.raw.show{display:block}
     ctx.beginPath(); ctx.moveTo(padL,Y((ymin+ymax)/2)); ctx.lineTo(padL+pw,Y((ymin+ymax)/2)); ctx.stroke();
     const trace = (arr, color, width, glow) => {
       ctx.beginPath();
-      for (let i=0;i<n;i++){ const px=X(sigT[i]), py=Y(arr[i]); i?ctx.lineTo(px,py):ctx.moveTo(px,py); }
+      for (let i=0;i<n;i++){ const px=X(e.t[i]), py=Y(arr[i]); i?ctx.lineTo(px,py):ctx.moveTo(px,py); }
       ctx.strokeStyle=color; ctx.lineWidth=width;
       if (glow){ ctx.shadowColor="rgba(63,224,255,.5)"; ctx.shadowBlur=7; }
       ctx.stroke(); ctx.shadowBlur=0;
     };
-    if (filterChk.checked && sigPF){
-      trace(sigP, "rgba(159,185,205,.35)", 1.2, false);   // raw, dimmed behind
-      trace(sigPF, "#3FE0FF", 1.8, true);                 // filtered on top
+    if (e.filter && e.pf){
+      trace(e.p, "rgba(159,185,205,.35)", 1.2, false);   // raw, dimmed behind
+      trace(e.pf, "#3FE0FF", 1.8, true);                 // filtered on top
     } else {
-      trace(sigP, "#3FE0FF", 1.8, true);
+      trace(e.p, "#3FE0FF", 1.8, true);
     }
   }
 
-  /* ================= detect ================= */
-  function showError(msg){ errbox.innerHTML = msg; errbox.classList.add("show"); result.classList.remove("show"); }
+  /* row interactions: expand, remove, per-file model / filter overrides */
+  function invalidate(e){ if (e.status === "done" || e.status === "error"){ e.status = "ready"; e.result = null; e.err = null; } }
+  queueEl.addEventListener("click", ev => {
+    const row = ev.target.closest(".qrow"); if (!row) return;
+    const e = queue.find(q => q.id === +row.dataset.id); if (!e) return;
+    if (ev.target.closest("[data-act='rm']")){
+      queue = queue.filter(q => q !== e);
+      renderQueue(); refreshDetect(); renderSummary();
+      return;
+    }
+    if (ev.target.closest(".q-cfg") || ev.target.closest(".q-detail")) return;
+    if (ev.target.closest(".q-head")){ e.expanded = !e.expanded; renderQueue(); }
+  });
+  queueEl.addEventListener("change", ev => {
+    const row = ev.target.closest(".qrow"); if (!row) return;
+    const e = queue.find(q => q.id === +row.dataset.id); if (!e) return;
+    const act = ev.target.dataset.act;
+    if (act === "model"){ e.model = ev.target.value; invalidate(e); }
+    else if (act === "filter"){ e.filter = ev.target.checked; invalidate(e); }
+    else return;
+    renderQueue(); refreshDetect(); renderSummary();
+  });
 
-  /* model selection: own upload > dropdown (fetched from /models) > Gokú default (backend-bundled) */
-  const modelCache = {};
-  function currentModelName(){
-    if (modelFile) return modelFile.name;
-    const v = modelSel.value;
-    if (!v) return "Gokú";
-    const opt = modelSel.options[modelSel.selectedIndex];
-    return opt ? opt.textContent.split("—")[0].trim() : v;
+  function refreshDetect(){
+    detectBtn.disabled = runningBatch || !queue.some(e => e.status === "ready" || e.status === "error");
   }
+  function renderSummary(){
+    const done = queue.filter(e => e.status === "done");
+    if (!done.length){ summaryEl.classList.remove("show"); summaryEl.innerHTML = ""; return; }
+    const b = done.filter(e => e.result.label === "BYPASS").length;
+    summaryEl.innerHTML = L().summary(b, done.length - b, done.length, queue.length);
+    summaryEl.classList.add("show");
+  }
+
+  /* ================= detect (sequential batch) ================= */
+  function showError(msg){ errbox.innerHTML = msg; errbox.classList.add("show"); }
+
+  /* bundled specialized models are fetched once from /models and cached */
+  const modelCache = {};
   async function getModel(name){
     if (modelCache[name]) return modelCache[name];
     loadingTxt.textContent = L().ldModel;
@@ -689,80 +790,56 @@ pre.raw.show{display:block}
     return f;
   }
 
+  /* each trace is sent with its own model + filter choice; sequentially,
+     to be gentle with the free backend dyno */
   async function detect(){
-    if (!csvFile){ showError(L().errPickFirst); return; }
-    errbox.classList.remove("show"); result.classList.remove("show");
-    detectBtn.disabled = true; loading.classList.add("show");
-    loadingTxt.textContent = L().ldAnalyzing;
-    lastModelName = currentModelName();
+    if (!queue.length){ showError(L().errPickFirst); return; }
+    const todo = queue.filter(e => e.status === "ready" || e.status === "error");
+    if (!todo.length) return;
+    errbox.classList.remove("show");
+    runningBatch = true; refreshDetect(); loading.classList.add("show");
+    let i = 0, aborted = false;
     const slow = setTimeout(() => { loadingTxt.textContent = L().ldWaking; }, 3500);
-    try{
-      const fd = new FormData();
-      fd.append("csv_file", csvFile, csvFile.name || "trace.csv");
-      fd.append("apply_filter", filterChk.checked ? "true" : "false");
-      if (modelFile){
-        fd.append("model_file", modelFile, modelFile.name);
-      } else if (modelSel.value){
-        const mf = await getModel(modelSel.value);   // chosen bundled model, fetched from /models
-        fd.append("model_file", mf, modelSel.value);
-        loadingTxt.textContent = L().ldAnalyzing;
+    for (const e of todo){
+      if (!queue.includes(e)) continue;   // removed while the batch was running
+      i++;
+      e.status = "running"; e.err = null; renderQueue();
+      loadingTxt.textContent = L().ldBatch(i, todo.length, e.name);
+      try{
+        const fd = new FormData();
+        fd.append("csv_file", e.file, e.name || "trace.csv");
+        fd.append("apply_filter", e.filter ? "true" : "false");
+        if (modelFile){
+          fd.append("model_file", modelFile, modelFile.name);
+        } else if (e.model){
+          const mf = await getModel(e.model);
+          fd.append("model_file", mf, e.model);
+          loadingTxt.textContent = L().ldBatch(i, todo.length, e.name);
+        }
+        const ctrl = new AbortController();
+        const to = setTimeout(() => ctrl.abort(), 90000);
+        const r = await fetch(API + "/api/analyze", {method:"POST", body:fd, signal:ctrl.signal});
+        clearTimeout(to); clearTimeout(slow);
+        setStatus("ok");
+        const j = await r.json();
+        if (j.status !== "success"){ e.status = "error"; e.err = {msg: j.message || "unknown", step: j.step}; e.expanded = true; }
+        else { e.status = "done"; e.result = j; if (queue.length === 1) e.expanded = true; }
+      }catch(err){
+        clearTimeout(slow); setStatus("bad");
+        e.status = "ready";               // stays re-runnable
+        showError(L().errUnreachable);
+        aborted = true;                   // connectivity issue — stop the batch
       }
-      const ctrl = new AbortController();
-      const to = setTimeout(() => ctrl.abort(), 90000);
-      const r = await fetch(API + "/api/analyze", {method:"POST", body:fd, signal:ctrl.signal});
-      clearTimeout(to); clearTimeout(slow);
-      setStatus("ok");
-      const j = await r.json();
-      if (j.status !== "success"){ showError(L().errBackend(j.message || "unknown", j.step)); return; }
-      lastResult = j; render(j);
-    }catch(e){
-      clearTimeout(slow);
-      setStatus("bad");
-      showError(L().errUnreachable);
-    }finally{
-      loading.classList.remove("show"); detectBtn.disabled = false;
+      renderQueue(); renderSummary();
+      if (aborted) break;
     }
+    loading.classList.remove("show");
+    runningBatch = false; refreshDetect();
   }
   detectBtn.addEventListener("click", detect);
 
-  /* ================= render result ================= */
+  /* ================= per-model icons ================= */
   const ICON = {rf:"🌲 RF", svm:"🔷 SVM", xgb:"🚀 XGB", lgbm:"⚡ LGBM"};
-  function render(j){
-    const bypass = j.label === "BYPASS";
-    vPct.textContent = j.confidence.toFixed(1) + " %";
-    vPct.className = "verdict-pct" + (bypass ? "" : " normal");
-    vLabel.textContent = bypass ? L().vBypass : L().vNormal;
-    vLabel.className = "verdict-label" + (bypass ? "" : " normal");
-    vSub.textContent = L().vSub(j.prob_bypass.toFixed(1), j.n_models);
-
-    vModels.className = "models" + (bypass ? "" : " normal");
-    vModels.innerHTML = "";
-    Object.keys(j.models).forEach(k => {
-      const m = j.models[k];
-      const row = document.createElement("div"); row.className = "m";
-      row.innerHTML = "<span>"+(ICON[k]||k.toUpperCase())+"</span><span class='bar'><i></i></span><span class='v'>"+m.confidence.toFixed(1)+"</span>";
-      vModels.appendChild(row);
-      const fill = row.querySelector("i");
-      setTimeout(() => { fill.style.width = Math.max(2, m.confidence) + "%"; }, 60);
-    });
-
-    const agree = j.agreement;
-    const agreeHtml = agree === null ? "" :
-      "<span class='agree "+(agree?"yes":"no")+"'>"+(agree?L().agreeYes:L().agreeNo)+"</span>";
-    vMeta.innerHTML =
-      agreeHtml +
-      "<span><b>"+L().metaFs+"</b> "+j.fs_hz+" Hz</span>" +
-      "<span><b>"+L().metaSamples+"</b> "+j.n_samples+"</span>" +
-      "<span><b>"+L().metaModel+"</b> "+(lastModelName || L().modelBundled)+"</span>";
-
-    rawPre.textContent = JSON.stringify(j, null, 2);
-    renderFilterInfo();
-    result.classList.add("show");
-    result.scrollIntoView({behavior:"smooth", block:"nearest"});
-  }
-  let rawOpen = false;
-  function renderRaw(){ rawTgl.textContent = (rawOpen ? "▾ " : "▸ ") + L().raw; }
-  rawTgl.addEventListener("click", () => { rawOpen = rawPre.classList.toggle("show"); renderRaw(); });
 
   /* ================= language ================= */
   function applyStatic(){
@@ -779,9 +856,7 @@ pre.raw.show{display:block}
     langCur.textContent = lang.toUpperCase();
     langOpts.forEach(o => { const on = o.dataset.lang === lang; o.classList.toggle("on", on); o.setAttribute("aria-selected", on); });
     try{ localStorage.setItem(LANG_KEY, lang); }catch(e){}
-    renderStatus(); renderSelected(); renderRaw(); renderFilterInfo(); renderAutoModel();
-    if (loading.classList.contains("show")) loadingTxt.textContent = L().ldAnalyzing;
-    if (lastResult) render(lastResult);
+    renderStatus(); renderQueue(); renderSummary();
   }
   langBtn.addEventListener("click", e => { e.stopPropagation(); openMenu(langWrap.getAttribute("aria-expanded") !== "true"); });
   langOpts.forEach(o => o.addEventListener("click", () => { setLang(o.dataset.lang); openMenu(false); }));
@@ -792,7 +867,6 @@ pre.raw.show{display:block}
   let initLang = "en";
   try{ initLang = localStorage.getItem(LANG_KEY) || "en"; }catch(e){}
   setLang(initLang);
-  renderRaw();
   refreshDetect();
   ping();
 })();
