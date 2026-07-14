@@ -246,7 +246,7 @@ pre.raw.show{display:block}
     <details class="adv">
       <summary data-i18n="advSummary">Advanced options</summary>
       <div class="body">
-        <label class="optchk"><input type="checkbox" id="filterChk"> <span data-i18n="filterLbl">Apply HydroAnalyzer's default filter</span></label>
+        <label class="optchk"><input type="checkbox" id="filterChk" checked> <span data-i18n="filterLbl">Apply HydroAnalyzer's default filter</span></label>
         <p class="hint" data-i18n="filterHint" style="margin:7px 0 3px">Cleans the signal exactly like the desktop app — 3 stages: neighbor anti-spike · Hampel · IQR envelope.</p>
         <p class="hint" id="filterInfo" style="color:var(--aqua);min-height:1.1em;margin:0"></p>
       </div>
@@ -347,10 +347,11 @@ pre.raw.show{display:block}
       errBackend:(msg,step)=>"<b>Backend error:</b> "+msg+(step?" <span class='mono'>(step: "+step+")</span>":""),
       raw:"raw JSON response",
       filterLbl:"Apply HydroAnalyzer's default filter",
-      filterHint:"Cleans the signal exactly like the desktop app — 3 stages: neighbor anti-spike · Hampel · IQR envelope.",
+      filterHint:"Cleans the signal exactly like the desktop app — 3 stages: neighbor anti-spike · Hampel · IQR envelope. On by default; turns itself off below 100 Hz.",
       cleaned:n=>n+" point"+(n!==1?"s":"")+" cleaned by the filter",
       filterBusy:"applying filter…",
-      previewCleaned:n=>"filter preview — "+n+" point"+(n!==1?"s":"")+" corrected"
+      previewCleaned:n=>"filter preview — "+n+" point"+(n!==1?"s":"")+" corrected",
+      filterOffLowFs:fs=>"filter turned off — trace sampled at ~"+fs+" Hz (needs ≥ 100 Hz)"
     },
     es: {
       docTitle:"HydraDetect-AI — Detector en vivo",
@@ -386,10 +387,11 @@ pre.raw.show{display:block}
       errBackend:(msg,step)=>"<b>Error del backend:</b> "+msg+(step?" <span class='mono'>(paso: "+step+")</span>":""),
       raw:"respuesta JSON cruda",
       filterLbl:"Aplicar el filtro por defecto de HydroAnalyzer",
-      filterHint:"Limpia la señal igual que la app de escritorio — 3 etapas: anti-spike por vecinos · Hampel · envolvente IQR.",
+      filterHint:"Limpia la señal igual que la app de escritorio — 3 etapas: anti-spike por vecinos · Hampel · envolvente IQR. Activado por defecto; se desactiva solo bajo 100 Hz.",
       cleaned:n=>n+" punto"+(n!==1?"s":"")+" limpiado"+(n!==1?"s":"")+" por el filtro",
       filterBusy:"aplicando filtro…",
-      previewCleaned:n=>"vista previa del filtro — "+n+" punto"+(n!==1?"s":"")+" corregido"+(n!==1?"s":"")
+      previewCleaned:n=>"vista previa del filtro — "+n+" punto"+(n!==1?"s":"")+" corregido"+(n!==1?"s":""),
+      filterOffLowFs:fs=>"filtro desactivado — señal muestreada a ~"+fs+" Hz (requiere ≥ 100 Hz)"
     }
   };
   let LANG = "en";
@@ -411,6 +413,7 @@ pre.raw.show{display:block}
   let sigPF = null, cleanedCount = 0;   // filtered preview of sigP (lazy)
   let selDesc = "", selCount = 0;   // selection state (for re-labelling on lang change)
   let autoP0 = null, modelManual = false;   // detected initial pressure · manual model override
+  let sigFs = null, filterManual = false;   // detected sampling rate · manual filter override
   let statusState = "wait";
   let lastResult = null;
 
@@ -502,6 +505,7 @@ pre.raw.show{display:block}
       // the picker is open to all file types, so reject anything without a signal
       csvFile = null; sigT = sigP = sigPF = null; plot.hidden = true; selCount = 0;
       autoP0 = null; renderAutoModel();
+      sigFs = null;
       refreshDetect(); renderSelected();
       showError(L().errNoSignal);
       return;
@@ -511,6 +515,14 @@ pre.raw.show{display:block}
     autoP0 = medianOf(sigP.subarray(0, Math.max(1, Math.floor(0.05 * sigP.length))));
     modelManual = false;
     autoSelectModel();
+    // fs = round(1 / median(positive dt)) — the backend's own definition.
+    // The filter's windows are sized in samples for high-rate captures, so it
+    // stays on by default and switches itself off below 100 Hz.
+    const dts = [];
+    for (let i = 1; i < sigT.length; i++){ const d = sigT[i] - sigT[i-1]; if (d > 0) dts.push(d); }
+    sigFs = Math.max(1, Math.round(1 / (dts.length ? medianOf(Float64Array.from(dts)) : 1e-3)));
+    filterManual = false;
+    filterChk.checked = sigFs >= 100;
     selCount = pp.length; renderSelected();
     updateFilterPreview();
   }
@@ -612,12 +624,14 @@ pre.raw.show{display:block}
     }
     renderPlot(); renderFilterInfo();
   }
-  filterChk.addEventListener("change", updateFilterPreview);
+  filterChk.addEventListener("change", () => { filterManual = true; updateFilterPreview(); });
 
-  /* while the box is ticked the live preview count is shown; otherwise the
-     backend's authoritative count from the last run (filtering is server-side) */
+  /* while the box is ticked the live preview count is shown; if it switched
+     itself off for a low-rate trace that is explained; otherwise the backend's
+     authoritative count from the last run (filtering is server-side) */
   function renderFilterInfo(){
     if (filterChk.checked && sigPF){ filterInfo.textContent = L().previewCleaned(cleanedCount); return; }
+    if (!filterChk.checked && sigFs != null && sigFs < 100){ filterInfo.textContent = L().filterOffLowFs(sigFs); return; }
     filterInfo.textContent = (lastResult && lastResult.filter_applied)
       ? L().cleaned(lastResult.points_cleaned) : "";
   }
