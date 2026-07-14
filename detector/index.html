@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>HydraDetect-AI — Live detector</title>
-<meta name="description" content="Run the HydraDetect-AI model on a pressure trace. Upload a CSV and get a bypass / normal verdict from the same RF + SVM ensemble as the Little Brother device.">
+<meta name="description" content="Run the HydraDetect-AI model on a pressure trace. Upload a CSV and get a bypass / normal verdict from the same voting ensemble the Little Brother device runs.">
 <link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="%23071A30"/><path d="M4 19h6l3-10 4 16 3-9 2 3h6" fill="none" stroke="%233FE0FF" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>'>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -270,7 +270,7 @@ pre.raw.show{display:block}
 </nav>
 
 <header class="wrap">
-  <span class="eyebrow" data-i18n="eyebrow">Live detector · RF + SVM ensemble</span>
+  <span class="eyebrow" data-i18n="eyebrow">Live detector · RF · SVM · XGB · LGBM ensemble</span>
   <h1 data-i18n="h1">Run the model on a <b>pressure trace</b>.</h1>
   <p class="lede" data-i18n="lede">Upload a 30-second pressure CSV and the <strong>same model the Little Brother device runs</strong> returns a <strong>bypass</strong> or <strong>normal</strong> verdict. The maths happens in a Python backend; this page just shows the result.</p>
 </header>
@@ -334,7 +334,7 @@ pre.raw.show{display:block}
   const T = {
     en: {
       docTitle:"HydraDetect-AI — Live detector",
-      eyebrow:"Live detector · RF + SVM ensemble",
+      eyebrow:"Live detector · RF · SVM · XGB · LGBM ensemble",
       h1:"Run the model on a <b>pressure trace</b>.",
       lede:'Upload one or several 30-second pressure CSVs and the <strong>same model the Little Brother device runs</strong> returns a <strong>bypass</strong> or <strong>normal</strong> verdict for each one. The maths happens in a Python backend; this page just shows the result.',
       step1:"Choose pressure traces",
@@ -344,10 +344,10 @@ pre.raw.show{display:block}
       advSummary:"Advanced options",
       step2:"Choose a model", step3:"Detect",
       modelHint:"Each model is tuned for a different initial-pressure range — loading a trace picks one automatically.",
-      mGoku:"Gokú — general (default)", mFreezer:"Freezer — 0–0.5 bar", mCell:"Cell — 0.5–1 bar", mBuu:"Buu — 1–1.5 bar",
+      mGoku:"Gogeta — general (default)", mFreezer:"Freezer — 0–0.5 bar", mCell:"Cell — 0.5–1 bar", mBuu:"Buu — 1–1.5 bar",
       modelOwnLbl:"…or upload your own .joblib (it will be used for every trace):",
       autoSel:(p,name)=>"initial pressure ≈ "+p+" bar → auto-selected: "+name,
-      autoGoku:p=>"initial pressure ≈ "+p+" bar — outside the specialized ranges → Gokú (general)",
+      autoGoku:p=>"initial pressure ≈ "+p+" bar — outside the specialized ranges → Gogeta (general)",
       autoManual:p=>"initial pressure ≈ "+p+" bar · model chosen manually",
       autoOwn:p=>"initial pressure ≈ "+p+" bar · your uploaded model takes priority",
       detectBtn:"Detect bypass",
@@ -383,7 +383,7 @@ pre.raw.show{display:block}
     },
     es: {
       docTitle:"HydraDetect-AI — Detector en vivo",
-      eyebrow:"Detector en vivo · ensemble RF + SVM",
+      eyebrow:"Detector en vivo · ensemble RF · SVM · XGB · LGBM",
       h1:"Corre el modelo sobre una <b>traza de presión</b>.",
       lede:'Sube uno o varios CSV de presión de 30 segundos y el <strong>mismo modelo que ejecuta el dispositivo Little Brother</strong> devuelve un veredicto <strong>bypass</strong> o <strong>normal</strong> por cada uno. El cálculo ocurre en un backend de Python; esta página solo muestra el resultado.',
       step1:"Elige trazas de presión",
@@ -393,10 +393,10 @@ pre.raw.show{display:block}
       advSummary:"Opciones avanzadas",
       step2:"Elige un modelo", step3:"Detectar",
       modelHint:"Cada modelo está afinado para un rango de presión inicial distinto — al cargar una señal se elige automáticamente.",
-      mGoku:"Gokú — general (por defecto)", mFreezer:"Freezer — 0–0.5 bar", mCell:"Cell — 0.5–1 bar", mBuu:"Buu — 1–1.5 bar",
+      mGoku:"Gogeta — general (por defecto)", mFreezer:"Freezer — 0–0.5 bar", mCell:"Cell — 0.5–1 bar", mBuu:"Buu — 1–1.5 bar",
       modelOwnLbl:"…o sube tu propio .joblib (se usará para todas las trazas):",
       autoSel:(p,name)=>"presión inicial ≈ "+p+" bar → autoseleccionado: "+name,
-      autoGoku:p=>"presión inicial ≈ "+p+" bar — fuera de los rangos especializados → Gokú (general)",
+      autoGoku:p=>"presión inicial ≈ "+p+" bar — fuera de los rangos especializados → Gogeta (general)",
       autoManual:p=>"presión inicial ≈ "+p+" bar · modelo elegido manualmente",
       autoOwn:p=>"presión inicial ≈ "+p+" bar · se usará tu modelo subido",
       detectBtn:"Detectar bypass",
@@ -490,7 +490,7 @@ pre.raw.show{display:block}
   function pickModelFor(p0){
     for (const m of MODEL_RANGES)
       if (p0 >= m.lo && (p0 < m.hi || (m.hi === 1.5 && p0 === 1.5))) return m.v;
-    return "";   // Gokú — general
+    return "";   // Gogeta — general
   }
   const MODEL_OPTS = [
     {v:"", k:"mGoku"},
@@ -503,7 +503,7 @@ pre.raw.show{display:block}
   }
   function usedModelName(e){
     if (modelFile) return modelFile.name;
-    if (!e.model) return "Gokú";
+    if (!e.model) return "Gogeta";
     const o = MODEL_OPTS.find(o => o.v === e.model);
     return o ? L()[o.k].split("—")[0].trim() : e.model;
   }

@@ -65,12 +65,12 @@ HydraDetect-AI/
 │   ├── index.html
 │   └── samples/                   # ready-to-try sample CSVs (bypass / normal)
 ├── backend/                       # FastAPI inference service (deployed on Render)
-│   ├── app.py                     # POST /api/analyze · filtering + RF/SVM voting
-│   ├── model/soldado_goku.joblib  # bundled default model
+│   ├── app.py                     # POST /api/analyze · filtering + voting ensemble
+│   ├── model/GOGETA.joblib        # bundled default model
 │   ├── Dockerfile · render.yaml · requirements.txt
 │   └── README.md
 ├── models/                        # trained voting ensembles by pressure range (.joblib)
-│   ├── soldado_goku.joblib        # default — RF + SVM
+│   ├── GOGETA.joblib              # default — RF + SVM + XGB + LGBM
 │   └── Freezer(mejorado).joblib · cell(mejorado).joblib · buu-1-1.5.joblib
 ├── data/training/                 # labeled acquisitions — bypass_data / no_bypass_data / test_data
 ├── downloads/

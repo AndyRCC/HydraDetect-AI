@@ -4,7 +4,7 @@ Standalone **FastAPI** service that runs the water-hammer bypass detector. It's 
 Little Brother device logic (same `extract_features` + voting ensemble, **bit-exact**)
 wrapped so the web frontend at [`/detector/`](../detector/) can call it from GitHub Pages.
 
-- A model is **bundled** (`model/soldado_goku.joblib`, RF + SVM), so visitors only upload a CSV.
+- A model is **bundled** (`model/GOGETA.joblib`, calibrated RF + SVM + XGB + LGBM), so visitors only upload a CSV.
 - `POST /api/analyze` accepts `csv_file` (required) and `model_file` (optional — overrides the bundled one).
 
 ## Endpoints
@@ -67,8 +67,7 @@ ALLOWED_ORIGINS=https://andyrcc.github.io
 
 ## Notes
 
-- The bundled model is an **RF + SVM** ensemble; the response adapts to whatever models a
-  `.joblib` contains (2 or 4). `xgboost`/`lightgbm` are installed so HydroAnalyzer 4-model
-  exports also work.
+- The bundled model (Gogeta, third generation) is a calibrated **RF + SVM + XGB + LGBM**
+  voting ensemble; the response adapts to whatever models a `.joblib` contains (2 or 4).
 - The model was trained on an older scikit-learn; it loads and predicts correctly on current
   versions (a harmless version warning may appear in the logs).

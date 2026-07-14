@@ -34,7 +34,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s  %(levelname)s  %(me
 logger = logging.getLogger("waterhammer-edge")
 
 # A model is shipped with the backend so visitors only upload a CSV.
-DEFAULT_MODEL_PATH = Path(__file__).parent / "model" / "soldado_goku.joblib"
+DEFAULT_MODEL_PATH = Path(__file__).parent / "model" / "GOGETA.joblib"
 
 
 # =====================================================================
