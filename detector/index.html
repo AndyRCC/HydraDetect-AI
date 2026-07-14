@@ -238,7 +238,7 @@ pre.raw.show{display:block}
       </span>
       <div class="big" data-i18n="dropBig">Drop a CSV here, or click to browse</div>
       <div class="sm" data-i18n="dropSm">two columns — time, pressure · ~30 s window</div>
-      <input type="file" id="fileInput" accept=".csv,text/csv" hidden>
+      <input type="file" id="fileInput" hidden>
     </div>
     <div class="sel" id="sel"><span data-i18n="selectedLbl">Selected:</span> <span class="name" id="selName">—</span> <span id="selMeta"></span></div>
     <canvas id="plot" height="150" hidden></canvas>
@@ -337,6 +337,7 @@ pre.raw.show{display:block}
       modelBundled:"bundled RF+SVM", modelYours:"your upload",
       selSamples:"samples",
       errPickFirst:"Pick a CSV first.",
+      errNoSignal:"That file doesn't look like a pressure CSV — no numeric “time, pressure” pairs were found. Pick another file.",
       errUnreachable:"<b>Couldn't reach the backend.</b><br>The free server may still be waking up (~30 s the first time) — wait a moment and try again.",
       errBackend:(msg,step)=>"<b>Backend error:</b> "+msg+(step?" <span class='mono'>(step: "+step+")</span>":""),
       raw:"raw JSON response",
@@ -371,6 +372,7 @@ pre.raw.show{display:block}
       modelBundled:"incluido RF+SVM", modelYours:"tu modelo",
       selSamples:"muestras",
       errPickFirst:"Elige un CSV primero.",
+      errNoSignal:"Ese archivo no parece un CSV de presión — no se encontraron pares numéricos «tiempo, presión». Elige otro archivo.",
       errUnreachable:"<b>No se pudo contactar el backend.</b><br>El servidor gratuito puede estar despertando (~30 s la primera vez) — espera un momento y reintenta.",
       errBackend:(msg,step)=>"<b>Error del backend:</b> "+msg+(step?" <span class='mono'>(paso: "+step+")</span>":""),
       raw:"respuesta JSON cruda",
@@ -437,7 +439,7 @@ pre.raw.show{display:block}
   }
   drop.addEventListener("click", () => fileInput.click());
   drop.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " "){ e.preventDefault(); fileInput.click(); } });
-  fileInput.addEventListener("change", () => { if (fileInput.files[0]){ const f = fileInput.files[0]; setCsv(f, f.name); } });
+  fileInput.addEventListener("change", () => { if (fileInput.files[0]){ const f = fileInput.files[0]; setCsv(f, f.name); fileInput.value = ""; } });
   ["dragover","dragenter"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("over"); }));
   ["dragleave","drop"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("over"); }));
   drop.addEventListener("drop", e => { const f = e.dataTransfer.files[0]; if (f) setCsv(f, f.name); });
@@ -447,7 +449,7 @@ pre.raw.show{display:block}
   /* ================= parse + plot ================= */
   async function drawCsv(file){
     let text;
-    try{ text = await file.text(); }catch(e){ return; }
+    try{ text = await file.text(); }catch(e){ text = ""; }
     const rows = text.replace(/^﻿/, "").trim().split(/\r?\n/);
     const tt = [], pp = [];
     for (const line of rows){
@@ -456,7 +458,13 @@ pre.raw.show{display:block}
       const x = parseFloat(parts[0]), y = parseFloat(parts[1]);
       if (Number.isFinite(x) && Number.isFinite(y)){ tt.push(x); pp.push(y); }
     }
-    if (pp.length < 2){ sigT = sigP = sigPF = null; plot.hidden = true; selCount = 0; renderSelected(); return; }
+    if (pp.length < 2){
+      // the picker is open to all file types, so reject anything without a signal
+      csvFile = null; sigT = sigP = sigPF = null; plot.hidden = true; selCount = 0;
+      refreshDetect(); renderSelected();
+      showError(L().errNoSignal);
+      return;
+    }
     sigT = Float64Array.from(tt); sigP = Float64Array.from(pp);
     sigPF = null; cleanedCount = 0;
     selCount = pp.length; renderSelected();
