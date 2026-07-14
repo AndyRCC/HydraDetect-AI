@@ -218,6 +218,9 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
 
 /* product */
 .prod{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center}
+/* grid items holding canvases must be allowed to shrink below the canvas'
+   device-pixel width, or the layout viewport blows up on phones */
+.prod > *,.hero-grid > *{min-width:0}
 .prod.flip .prod-media{order:2}
 .ver-pill{display:inline-flex;align-items:center;gap:8px;margin-left:14px;vertical-align:middle;
   font-family:var(--font-m);font-size:12px;letter-spacing:.06em;color:var(--aqua);
@@ -286,7 +289,7 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
 
 /* results */
 .res-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:48px;margin-top:46px;align-items:start}
-.tbl-wrap{border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden;background:rgba(8,31,56,.42)}
+.tbl-wrap{border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden;overflow-x:auto;background:rgba(8,31,56,.42)}
 .tbl-wrap .cap{padding:13px 18px;border-bottom:1px solid var(--line-soft);font-family:var(--font-m);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
 table{width:100%;border-collapse:collapse;font-family:var(--font-m);font-size:13.5px}
 th,td{padding:13px 18px;text-align:left;border-bottom:1px solid var(--line-soft)}
