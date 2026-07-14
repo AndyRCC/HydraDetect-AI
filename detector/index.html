@@ -342,7 +342,9 @@ pre.raw.show{display:block}
       raw:"raw JSON response",
       filterLbl:"Apply HydroAnalyzer's default filter",
       filterHint:"Cleans the signal exactly like the desktop app — 3 stages: neighbor anti-spike · Hampel · IQR envelope.",
-      cleaned:n=>n+" point"+(n!==1?"s":"")+" cleaned by the filter"
+      cleaned:n=>n+" point"+(n!==1?"s":"")+" cleaned by the filter",
+      filterBusy:"applying filter…",
+      previewCleaned:n=>"filter preview — "+n+" point"+(n!==1?"s":"")+" corrected"
     },
     es: {
       docTitle:"HydraDetect-AI — Detector en vivo",
@@ -374,7 +376,9 @@ pre.raw.show{display:block}
       raw:"respuesta JSON cruda",
       filterLbl:"Aplicar el filtro por defecto de HydroAnalyzer",
       filterHint:"Limpia la señal igual que la app de escritorio — 3 etapas: anti-spike por vecinos · Hampel · envolvente IQR.",
-      cleaned:n=>n+" punto"+(n!==1?"s":"")+" limpiado"+(n!==1?"s":"")+" por el filtro"
+      cleaned:n=>n+" punto"+(n!==1?"s":"")+" limpiado"+(n!==1?"s":"")+" por el filtro",
+      filterBusy:"aplicando filtro…",
+      previewCleaned:n=>"vista previa del filtro — "+n+" punto"+(n!==1?"s":"")+" corregido"+(n!==1?"s":"")
     }
   };
   let LANG = "en";
@@ -392,6 +396,7 @@ pre.raw.show{display:block}
 
   let csvFile = null, modelFile = null, lastModelName = "";
   let sigT = null, sigP = null;   // parsed signal (for the plot only)
+  let sigPF = null, cleanedCount = 0;   // filtered preview of sigP (lazy)
   let selDesc = "", selCount = 0;   // selection state (for re-labelling on lang change)
   let statusState = "wait";
   let lastResult = null;
@@ -451,14 +456,116 @@ pre.raw.show{display:block}
       const x = parseFloat(parts[0]), y = parseFloat(parts[1]);
       if (Number.isFinite(x) && Number.isFinite(y)){ tt.push(x); pp.push(y); }
     }
-    if (pp.length < 2){ sigT = sigP = null; plot.hidden = true; selCount = 0; renderSelected(); return; }
+    if (pp.length < 2){ sigT = sigP = sigPF = null; plot.hidden = true; selCount = 0; renderSelected(); return; }
     sigT = Float64Array.from(tt); sigP = Float64Array.from(pp);
+    sigPF = null; cleanedCount = 0;
     selCount = pp.length; renderSelected();
-    renderPlot();
+    updateFilterPreview();
   }
 
-  /* "X points cleaned" comes back from the backend after a run (filtering is server-side) */
+  /* ============ client-side port of HydroAnalyzer's default filter ============
+     Preview only — at detect time the backend runs the authoritative Python
+     version (app.py). Same 3 stages, same default parameters:
+     neighbor anti-spike (4σ, 0.5, 2 passes) → Hampel (7, 3σ) →
+     IQR envelope (31, 3σ, 3 passes, transient protection 201). */
+  function qSorted(a, m, q){
+    const h = (m-1)*q, lo = Math.floor(h), f = h-lo;
+    return f ? a[lo] + f*(a[lo+1]-a[lo]) : a[lo];
+  }
+  function rollingQ(x, win, qs){   // centered rolling quantiles, min_periods=1
+    const n = x.length, half = (win-1)>>1, buf = new Float64Array(win);
+    const res = qs.map(() => new Float64Array(n));
+    for (let i=0;i<n;i++){
+      const lo = Math.max(0,i-half), hi = Math.min(n-1,i+half), m = hi-lo+1;
+      for (let j=0;j<m;j++) buf[j] = x[lo+j];
+      const w = buf.subarray(0,m); w.sort();
+      for (let k=0;k<qs.length;k++) res[k][i] = qSorted(w,m,qs[k]);
+    }
+    return res;
+  }
+  function medianOf(a){ const s = Float64Array.from(a).sort(); return qSorted(s, s.length, .5); }
+  function neighborDiffFilter(x, sig, ratio, passes){
+    const n = x.length; if (n < 3) return Float64Array.from(x);
+    const d = new Float64Array(n-1);
+    for (let i=0;i<n-1;i++) d[i] = x[i+1]-x[i];
+    const md = medianOf(d);
+    for (let i=0;i<n-1;i++) d[i] = Math.abs(d[i]-md);
+    const thr = sig * Math.max(medianOf(d)*1.4826, 1e-9);
+    let out = Float64Array.from(x);
+    for (let p=0;p<passes;p++){
+      const next = out.slice(); let any = false;
+      for (let i=1;i<n-1;i++){
+        const avg = .5*(out[i-1]+out[i+1]), dc = Math.abs(out[i]-avg);
+        if (dc > thr && Math.abs(out[i+1]-out[i-1]) < dc*ratio){ next[i] = avg; any = true; }
+      }
+      out = next; if (!any) break;
+    }
+    return out;
+  }
+  function hampelFilter(x, win, nSig){
+    const n = x.length; if (n < 3) return Float64Array.from(x);
+    const med = rollingQ(x, win, [.5])[0];
+    const diff = new Float64Array(n);
+    for (let i=0;i<n;i++) diff[i] = Math.abs(x[i]-med[i]);
+    const mad = rollingQ(diff, win, [.5])[0];
+    const out = Float64Array.from(x);
+    for (let i=0;i<n;i++) if (mad[i] > 0 && diff[i] > nSig*1.4826*mad[i]) out[i] = med[i];
+    return out;
+  }
+  function iqrEnvelopeFilter(x, win, nSig, passes, protWin){
+    const n = x.length; if (n < 5) return Float64Array.from(x);
+    const protect = new Uint8Array(n);
+    { // genuine transients (the water-hammer front) are protected from the envelope
+      const wm = rollingQ(x, protWin, [.5])[0];
+      const wd = new Float64Array(n-1);
+      for (let i=1;i<n;i++) wd[i-1] = Math.abs(wm[i]-wm[i-1]);
+      const thr = qSorted(wd.slice().sort(), n-1, .95);
+      if (thr > 1e-9){
+        const halfPad = Math.max(win,21) >> 1;
+        for (let i=1;i<n;i++) if (wd[i-1] > thr){
+          for (let j=Math.max(0,i-halfPad), e=Math.min(n-1,i+halfPad); j<=e; j++) protect[j] = 1;
+        }
+      }
+    }
+    let out = Float64Array.from(x);
+    for (let p=0;p<passes;p++){
+      const [q1,med,q3] = rollingQ(out, win, [.25,.5,.75]);
+      const next = out.slice(); let any = false;
+      for (let i=0;i<n;i++){
+        const iqr = q3[i]-q1[i];
+        if (iqr > 1e-9 && !protect[i] && (out[i] > q3[i]+nSig*iqr || out[i] < q1[i]-nSig*iqr)){ next[i] = med[i]; any = true; }
+      }
+      out = next; if (!any) break;
+    }
+    return out;
+  }
+  function applyDefaultFilter(p){
+    let out = neighborDiffFilter(p, 4, .5, 2);
+    out = hampelFilter(out, 7, 3);
+    return iqrEnvelopeFilter(out, 31, 3, 3, 201);
+  }
+
+  /* recompute (lazily) and redraw when the checkbox or the trace changes */
+  function updateFilterPreview(){
+    if (filterChk.checked && sigP && !sigPF){
+      filterInfo.textContent = L().filterBusy;
+      setTimeout(() => {
+        if (!sigP){ renderPlot(); renderFilterInfo(); return; }
+        sigPF = applyDefaultFilter(sigP);
+        cleanedCount = 0;
+        for (let i=0;i<sigP.length;i++) if (sigPF[i] !== sigP[i]) cleanedCount++;
+        renderPlot(); renderFilterInfo();
+      }, 30);
+      return;
+    }
+    renderPlot(); renderFilterInfo();
+  }
+  filterChk.addEventListener("change", updateFilterPreview);
+
+  /* while the box is ticked the live preview count is shown; otherwise the
+     backend's authoritative count from the last run (filtering is server-side) */
   function renderFilterInfo(){
+    if (filterChk.checked && sigPF){ filterInfo.textContent = L().previewCleaned(cleanedCount); return; }
     filterInfo.textContent = (lastResult && lastResult.filter_applied)
       ? L().cleaned(lastResult.points_cleaned) : "";
   }
@@ -479,9 +586,19 @@ pre.raw.show{display:block}
     const Y = y => padT + (1-(y-ymin)/((ymax-ymin)||1))*ph;
     ctx.strokeStyle="rgba(143,196,238,.10)"; ctx.lineWidth=1;
     ctx.beginPath(); ctx.moveTo(padL,Y((ymin+ymax)/2)); ctx.lineTo(padL+pw,Y((ymin+ymax)/2)); ctx.stroke();
-    ctx.beginPath();
-    for (let i=0;i<n;i++){ const px=X(sigT[i]), py=Y(sigP[i]); i?ctx.lineTo(px,py):ctx.moveTo(px,py); }
-    ctx.strokeStyle="#3FE0FF"; ctx.lineWidth=1.8; ctx.shadowColor="rgba(63,224,255,.5)"; ctx.shadowBlur=7; ctx.stroke(); ctx.shadowBlur=0;
+    const trace = (arr, color, width, glow) => {
+      ctx.beginPath();
+      for (let i=0;i<n;i++){ const px=X(sigT[i]), py=Y(arr[i]); i?ctx.lineTo(px,py):ctx.moveTo(px,py); }
+      ctx.strokeStyle=color; ctx.lineWidth=width;
+      if (glow){ ctx.shadowColor="rgba(63,224,255,.5)"; ctx.shadowBlur=7; }
+      ctx.stroke(); ctx.shadowBlur=0;
+    };
+    if (filterChk.checked && sigPF){
+      trace(sigP, "rgba(159,185,205,.35)", 1.2, false);   // raw, dimmed behind
+      trace(sigPF, "#3FE0FF", 1.8, true);                 // filtered on top
+    } else {
+      trace(sigP, "#3FE0FF", 1.8, true);
+    }
   }
 
   /* ================= detect ================= */
